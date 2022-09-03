@@ -1,4 +1,4 @@
-Require Import Omega.
+From Coq Require Import Lia.
 Require Export Qual.grade.
 
 Set Implicit Arguments.
@@ -11,10 +11,10 @@ Set Implicit Arguments.
    substitution. We need to know which variables are relevant (those in P with
    grades <= psi) and which ones are not.
 
-   Reflexivity requires P |- psi a 
+   Reflexivity requires P |- psi a
 
    Lifting:
-  
+
            P, x:psi |- phi b
            P |- phi psi a1 ~ a2
            P |- phi b {a1/x} ~~ b {a2/x}
@@ -24,12 +24,12 @@ Set Implicit Arguments.
 (* relationship to grade *)
 
 
-Lemma CEq_GEq_Grade : 
+Lemma CEq_GEq_Grade :
   (forall P phi phi0 a b,
   CEq P phi phi0 a b -> CGrade P phi phi0 a /\ CGrade P phi phi0 b) /\
   (forall P phi a b,
   GEq P phi a b -> Grade P phi a /\ Grade P phi b).
-Proof. 
+Proof.
   eapply CEq_GEq_mutual.
   all: intros; split_hyp; split; eauto using leq_join_r.
   all: try solve [fresh_apply_Grade x; eauto;
@@ -50,9 +50,9 @@ Proof. apply CEq_GEq_Grade. Qed.
 
 (* Graded/Guarded equality is an equivalence/congruence relation, closed under substitution and implies consistency. *)
 
-Lemma CEq_GEq_refl : (forall P phi psi a, CGrade P phi psi a -> CEq P phi psi a a) /\ 
+Lemma CEq_GEq_refl : (forall P phi psi a, CGrade P phi psi a -> CEq P phi psi a a) /\
                      (forall P phi a, Grade P phi a -> GEq P phi a a).
-Proof. 
+Proof.
   apply CGrade_Grade_mutual.
   all: intros; eauto.
 Qed.
@@ -66,29 +66,29 @@ Proof.
   destruct CEq_GEq_refl; auto.
 Qed.
 
-Lemma CEq_GEq_sym : 
+Lemma CEq_GEq_sym :
   (forall P phi phi0 a b,
   CEq P phi phi0 a b -> CEq P phi phi0 b a) /\
   (forall P phi a b,
   GEq P phi a b -> GEq P phi b a).
-Proof. 
+Proof.
   eapply CEq_GEq_mutual.
-  all: intros; eauto. 
+  all: intros; eauto.
 Qed.
 
 Lemma GEq_symmetry :   (forall P phi a b,
   GEq P phi a b -> GEq P phi b a).
 Proof. apply CEq_GEq_sym. Qed.
-  
-Lemma CEq_GEq_trans : 
+
+Lemma CEq_GEq_trans :
   (forall P  phi phi0 a b,
   CEq P phi phi0 a b -> forall c, CEq P phi phi0 b c  -> CEq P phi phi0 a c) /\
   (forall P phi a b,
   GEq P phi a b -> forall c, GEq P phi b c -> GEq P phi a c).
-Proof. 
+Proof.
   eapply CEq_GEq_mutual.
   all: intros; subst; eauto.
-  all: try match goal with 
+  all: try match goal with
     | [ H: GEq ?P ?ps (_ _ ) ?c |- _ ] => inversion H; subst; clear H end.
   all: eauto.
 
@@ -97,46 +97,46 @@ Proof.
     inversion H0. subst. eauto. done.
   - (* nleq *)
     inversion H; subst. done.
-    eapply CEq_Nleq; eauto. 
+    eapply CEq_Nleq; eauto.
 Qed.
 
 
 Lemma GEq_trans : forall P phi a b c, GEq P phi a b -> GEq P phi b c -> GEq P phi a c.
-Proof. 
+Proof.
   intros.
   destruct CEq_GEq_trans.
-  eapply H2; eauto. 
+  eapply H2; eauto.
 Qed.
 
 (* ------------------------------------------------------- *)
 
 (*
      b1  ->  b2
-  phi =     phi .= 
+  phi =     phi .=
      b1' .-> b2'
 
 *)
 
-Lemma CEq_GEq_respects_Step : 
+Lemma CEq_GEq_respects_Step :
   (forall P phi phi0 b1 b1',
-  CEq P phi phi0 b1 b1' ->  forall b2, Step b1 b2 -> 
+  CEq P phi phi0 b1 b1' ->  forall b2, Step b1 b2 ->
        exists b2', (phi0 <= phi -> Step b1' b2') /\ CEq P phi phi0 b2 b2') /\
   (forall P phi b1 b1',
   GEq P phi b1 b1' -> forall b2, Step b1 b2 ->
        exists b2', Step b1' b2' /\ GEq P phi b2 b2').
-Proof. 
+Proof.
   eapply CEq_GEq_mutual.
-  all: intros; subst; eauto. 
+  all: intros; subst; eauto.
   all: match goal with [ H : Step _ _ |- _ ] => inversion H; subst end.
   all: try
     let b2' := fresh in
-    let ss' := fresh in 
+    let ss' := fresh in
     let GE' := fresh in
-    match goal with [ H : forall b3, Step ?b1 b3 -> _ , H2 : Step ?b1 ?a' |- _ ] => 
+    match goal with [ H : forall b3, Step ?b1 b3 -> _ , H2 : Step ?b1 ?a' |- _ ] =>
                   destruct (H _ H2) as [b2' [ss' GE']] ; clear H end.
-  all: split_hyp. 
+  all: split_hyp.
   all: try solve [
-             eexists; split; 
+             eexists; split;
              econstructor;
              eauto 3 using CEq_refl, GEq_lc2, CEq_lc2, CEq_uniq].
   (* all: try solve [
@@ -148,9 +148,9 @@ Proof.
   all: try solve [
     eexists; split; try (intro h; done);
     eapply CEq_Nleq; eauto 3 using Step_lc2] .
- 
+
   - (* beta *)
-    inversion g. subst. 
+    inversion g. subst.
     pick fresh x. spec x.
     exists (open_tm_wrt_tm b0 a2). split.
     econstructor; eauto using GEq_lc2; eauto using CEq_lc2.
@@ -180,4 +180,3 @@ Proof.
     eexists (a_App b2' psi0 a2'). split; auto.
     eapply S_Case2Beta; eauto using GEq_lc2, CEq_lc2.
 Qed.
-

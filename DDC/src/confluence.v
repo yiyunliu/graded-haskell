@@ -1,4 +1,4 @@
-Require Import Omega.
+From Coq Require Import Lia.
 Require Export Qual.geq.
 Require Export Qual.defeq.
 Require Export Qual.par.
@@ -8,33 +8,33 @@ Require Export Qual.par.
 
 Set Implicit Arguments.
 
-Lemma Par_Abs_inv : forall {S D rho A1 a1 B}, Par S D (a_Abs rho A1 a1) B -> 
-      exists B1 b1, 
-          B = (a_Abs rho B1 b1) 
+Lemma Par_Abs_inv : forall {S D rho A1 a1 B}, Par S D (a_Abs rho A1 a1) B ->
+      exists B1 b1,
+          B = (a_Abs rho B1 b1)
         /\ forall x, x `notin` fv_tm_tm a1 \u fv_tm_tm b1 \u dom S ->
                Par ([(x,rho)]++S) D (open_tm_wrt_tm a1 (a_Var_f x)) (open_tm_wrt_tm b1 (a_Var_f x))
         /\ CPar S D q_Top A1 B1.
-Proof. 
-  intros S D rho A1 a1 B h. 
+Proof.
+  intros S D rho A1 a1 B h.
   dependent induction h.
-  all: try invert_Grade; subst. 
+  all: try invert_Grade; subst.
   all: eexists; eexists.
   all: split; try reflexivity; intros; split.
   all: pick fresh y.
   + eapply Par_Refl; eauto.
-    eapply (@Grade_renaming y); eauto. 
+    eapply (@Grade_renaming y); eauto.
   + invert_CGrade A1; eauto.
   + repeat spec y.
     eapply (@Par_renaming y); eauto.
   + auto.
 Qed.
 
-Lemma Par_WPair_inv : forall {S D rho a0 a1 B}, Par S D (a_WPair a0 rho a1) B -> 
-      exists b0 b1, 
-          B = (a_WPair b0 rho b1) 
-        /\ (CPar S D rho a0 b0) 
+Lemma Par_WPair_inv : forall {S D rho a0 a1 B}, Par S D (a_WPair a0 rho a1) B ->
+      exists b0 b1,
+          B = (a_WPair b0 rho b1)
+        /\ (CPar S D rho a0 b0)
         /\ Par S D a1 b1.
-Proof. 
+Proof.
   intros S D rho a0 a1 B h. dependent induction h.
   all: try invert_Grade; subst;
         eexists; eexists; split; try reflexivity; split.
@@ -44,12 +44,12 @@ Proof.
   invert_CGrade a0; auto.
 Qed.
 
-Lemma Par_SPair_inv : forall {S D rho a0 a1 B}, Par S D (a_SPair a0 rho a1) B -> 
-      exists b0 b1, 
-          B = (a_SPair b0 rho b1) 
-        /\ (CPar S D rho a0 b0) 
+Lemma Par_SPair_inv : forall {S D rho a0 a1 B}, Par S D (a_SPair a0 rho a1) B ->
+      exists b0 b1,
+          B = (a_SPair b0 rho b1)
+        /\ (CPar S D rho a0 b0)
         /\ Par S D a1 b1.
-Proof. 
+Proof.
   intros S D rho a0 a1 B h. dependent induction h.
   all: try invert_Grade; subst;
         eexists; eexists; split; try reflexivity; split.
@@ -59,11 +59,11 @@ Proof.
 Qed.
 
 
-Lemma Par_Inj1_inv : forall {S D a0 B}, Par S D (a_Inj1 a0) B -> 
-      exists b0, 
-          B = (a_Inj1 b0) 
+Lemma Par_Inj1_inv : forall {S D a0 B}, Par S D (a_Inj1 a0) B ->
+      exists b0,
+          B = (a_Inj1 b0)
         /\ Par S D a0 b0.
-Proof. 
+Proof.
   intros S D a0 B h. dependent induction h.
   all: try invert_Grade; subst;
         eexists; split; try reflexivity.
@@ -71,11 +71,11 @@ Proof.
   all: try eapply Par_Refl; eauto.
 Qed.
 
-Lemma Par_Inj2_inv : forall {S D a0 B}, Par S D (a_Inj2 a0) B -> 
-      exists b0, 
-          B = (a_Inj2 b0) 
+Lemma Par_Inj2_inv : forall {S D a0 B}, Par S D (a_Inj2 a0) B ->
+      exists b0,
+          B = (a_Inj2 b0)
         /\ Par S D a0 b0.
-Proof. 
+Proof.
   intros S D a0 B h. dependent induction h.
   all: try invert_Grade; subst;
         eexists; split; try reflexivity.
@@ -91,7 +91,7 @@ Local Ltac use_size_induction a ac Par1 Par2 :=
   | [   IH : forall y: nat, ?T,
         H : Par ?G ?psi a ?b0,
         H4 : Par ?G ?psi a ?b1 |- _ ] =>
-      move: (@IH (size_tm a) ltac:(omega) a ltac:(auto) _ _ _ H _ H4) => [ ac [Par1 Par2]]
+      move: (@IH (size_tm a) ltac:(lia) a ltac:(auto) _ _ _ H _ H4) => [ ac [Par1 Par2]]
   end.
 Local Ltac use_size_induction_open a0 x ac Par1 Par2 :=
    let h0 := fresh in
@@ -133,7 +133,7 @@ Proof.
   all: try solve [
   match goal with
       | [ P2 : Par _ _ ?b ?b |- exists cc:tm, Par ?S ?D ?b cc /\ Par ?S ?D ?a2 cc ] =>
-        exists a2 
+        exists a2
       end; split; eauto using Par_Grade2].
   (*  76 subgoals *)
   all: try solve [
@@ -142,7 +142,7 @@ Proof.
         exists a2
       end;  split; eauto using Par_Grade2].
   (* 52 subgoals *)
-  all: try invert_equality; subst. 
+  all: try invert_equality; subst.
   all: simpl in SZ; destruct n; try solve [ inversion SZ ].
   all: try done.
   - (* pi cong / pi cong *)
@@ -231,13 +231,13 @@ Proof.
     use_size_induction a0 ac Par1 Par2.
     use_size_induction b bc Par3 Par4.
     exists (a_App ac psi1 bc).
-    split; eauto. 
+    split; eauto.
     +  (* irrel *)
       use_size_induction a0 ac Par1 Par2.
       exists (a_App ac psi1 b').
-      split; eauto. 
+      split; eauto.
   - (* lam cong / lam cong *)
-    pick fresh x. 
+    pick fresh x.
     use_size_induction_open b1 x bc Par1 Par2.
     match goal with [ H : CPar ?S ?psi ?phi _ _ |- _ ] => inversion H; clear H end;
       match goal with [ H : CPar ?S ?psi ?phi _ _ |- _ ] => inversion H; clear H end;
@@ -268,7 +268,7 @@ Proof.
       use_size_induction b1 bc Par3 Par4.
       exists (a_WPair ac psi1 bc).
       split. eauto. eauto.
-    + (* two wpair irrel *) 
+    + (* two wpair irrel *)
       use_size_induction b1 bc Par3 Par4.
       exists (a_WPair a3 psi1 bc).
       split. eauto. eauto.
@@ -279,26 +279,26 @@ Proof.
     move: (Par_WPair_inv Par1) => [a'1 [b1' ?]]; split_hyp; subst.
     move: (Par_WPair_inv Par2) => [a'2 [b2' ?]]; split_hyp; subst.
     invert_equality; subst.
-    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'2) q_Bot b2'). 
+    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'2) q_Bot b2').
     repeat rewrite <- subst_tm_tm_spec.
     rewrite (subst_tm_tm_intro x b2); auto.
     rewrite (subst_tm_tm_intro x b3); auto.
-    split. 
+    split.
     + eapply Par_App; eauto using leq_Bot.
-      eapply Par_subst3; try eassumption. 
-    + eapply Par_App; eauto using Par_lc1, leq_Bot. 
-      eapply Par_subst3; try eassumption. 
+      eapply Par_subst3; try eassumption.
+    + eapply Par_App; eauto using Par_lc1, leq_Bot.
+      eapply Par_subst3; try eassumption.
   - (* letpair beta / cong *)
     use_size_induction a0 ac Par1 Par2.
     pick fresh x.
     use_size_induction_open b1 x bc Par3 Par4.
     move: (Par_WPair_inv Par1) => [a'1 [b1' ?]]; split_hyp; subst.
-    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'1) q_Bot b1'). 
+    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'1) q_Bot b1').
     rewrite <- subst_tm_tm_spec.
     rewrite (subst_tm_tm_intro x b2); auto.
     split.
     + eapply Par_App; eauto using leq_Bot.
-      eapply Par_subst3; try eassumption. 
+      eapply Par_subst3; try eassumption.
     + rewrite subst_tm_tm_spec.
       exists_apply_Par x.
   - (* letpair cong / beta *)
@@ -306,14 +306,14 @@ Proof.
     pick fresh x.
     use_size_induction_open b1 x bc Par3 Par4.
     move: (Par_WPair_inv Par2) => [a'1 [b1' ?]]; split_hyp; subst.
-    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'1) q_Bot b1'). 
+    exists (a_App (open_tm_wrt_tm (close_tm_wrt_tm x bc) a'1) q_Bot b1').
     rewrite <- subst_tm_tm_spec.
     rewrite (subst_tm_tm_intro x b3); auto.
     split.
     + rewrite subst_tm_tm_spec.
       exists_apply_Par x.
     + eapply Par_App; eauto using leq_Bot.
-      eapply Par_subst3; try eassumption. 
+      eapply Par_subst3; try eassumption.
   - (* letpair cong / cong *)
     use_size_induction a0 ac Par1 Par2.
     pick fresh x.
@@ -358,7 +358,7 @@ Proof.
   - (* fst cong / fst beta *)
     use_size_induction a0 ac Par1 Par2.
     move: (Par_SPair_inv Par2) => [a'1 [b1' ?]]; split_hyp; subst.
-    match goal with [ H : CPar ?S ?psi ?phi _ _ |- _ ] => inversion H; clear H end; subst; try done.    
+    match goal with [ H : CPar ?S ?psi ?phi _ _ |- _ ] => inversion H; clear H end; subst; try done.
     exists a'1. split; eauto.
   - (* fst cong / fst cong *)
     use_size_induction a0 ac Par1 Par2.
@@ -403,7 +403,7 @@ Proof.
     exists (a_App b1c psi1 a'2).
     split; eapply Par_App; eauto.
 
-  - (* case beta1 / beta2 (impossible) *) 
+  - (* case beta1 / beta2 (impossible) *)
     use_size_induction a0 ac Par1 Par2.
     move: (Par_Inj1_inv Par1) => [a'1 ?]; split_hyp; subst.
     move: (Par_Inj2_inv Par2) => [a'2 ?]; split_hyp; subst.
@@ -469,5 +469,3 @@ Proof.
   intros.
   eapply confluence_size; eauto.
 Qed.
-
-

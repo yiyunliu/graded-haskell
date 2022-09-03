@@ -62,11 +62,10 @@ Proof.
     econstructor; eauto;
     reflexivity].
 
-  all: try solve [pick fresh x and apply Eq_SubstIrrel; eauto 2;
-    repeat spec x;
+  all: try solve repeat spec x;
     match goal with [ H : forall P', P_sub P' ?P -> _ |- _] => eapply H end;
     econstructor; eauto;
-    reflexivity].
+    reflexivity.
 
   eapply Eq_Trans; eauto.
   eapply Eq_Beta; eauto.

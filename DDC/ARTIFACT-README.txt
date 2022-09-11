@@ -203,10 +203,10 @@ a fresh version of Ubuntu.
 - sudo apt install gcc
 - sudo apt install opam
 - opam init
-- opam switch create 4.09.1
-- eval $(opam env --switch=4.01.1)
+- opam switch create 4.14.0
+- eval $(opam env --switch=4.14.0)
 - opam repo add coq-released https://coq.inria.fr/opam/released
-- opam pin coq 8.10.2
+- opam pin coq 8.15.2
 - opam install ott
 - opam pin add coq-metalib https://github.com/plclub/metalib.git
 - git clone https://github.com/sweirich/graded-haskell.git

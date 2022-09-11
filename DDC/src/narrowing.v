@@ -58,14 +58,12 @@ Proof.
   all: intros; eauto 3 using P_sub_uniq1.
   all: try solve [fresh_apply_DefEq x; auto;
     repeat spec x;
-    match goal with [ H : forall P', P_sub P' ?P -> _ |- _] => eapply H end;
-    econstructor; eauto;
-    reflexivity].
-
-  all: try solve repeat spec x;
-    match goal with [ H : forall P', P_sub P' ?P -> _ |- _] => eapply H end;
-    econstructor; eauto;
-    reflexivity.
+    match goal with
+     [ H : forall P', P_sub P' ?P -> _ |- _] => eapply H;
+                  econstructor; eauto;
+                  reflexivity
+    | [ |- ~ _ <= _ ] => eauto
+    end].
 
   eapply Eq_Trans; eauto.
   eapply Eq_Beta; eauto.
@@ -77,7 +75,6 @@ Proof.
   eapply Eq_SPair; eauto.
   eapply Eq_Sum; eauto.
   eapply Eq_Case; eauto.
-
 Qed.
 
 Lemma Par_narrowing : 

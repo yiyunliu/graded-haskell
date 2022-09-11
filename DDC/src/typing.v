@@ -305,9 +305,8 @@ Proof.
          fsetdec.
   - (* pi *)
     fresh_apply_Typing y; eauto.
-    eapply IHTyping; eauto.
     repeat spec y.
-    subst_CTyping_ih.
+    subst_CTyping_ih; eauto.
   - (* abs *)
     fresh_apply_Typing y.  repeat spec y.
     subst_CTyping_ih.
@@ -318,14 +317,10 @@ Proof.
     unfold subst_ctx. simpl_env in u. solve_uniq.
   - (* App *)
     rewrite subst_tm_tm_open_tm_wrt_tm; eauto using CTyping_lc1.
-    eapply T_App; eauto.
-    eapply IHTyping1; eauto.
   - (* AppI *)
     rewrite subst_tm_tm_open_tm_wrt_tm; eauto using CTyping_lc1.
     simpl_env in H0. 
     eapply T_AppIrrel; eauto.
-    eapply IHTyping1; eauto.
-    fold subst_tm_tm.
     simpl_env.
     eapply IHTyping2; eauto using Ctx_meet_ctx_l. simpl_env. eauto.
     + eapply meet_ctx_l_CTyping; eauto.
@@ -334,9 +329,8 @@ Proof.
       eapply uniq_app; eauto.
   - (* WSigma *)
     fresh_apply_Typing y; eauto.
-    eapply IHTyping; eauto.
     repeat spec y.
-    subst_CTyping_ih.
+    subst_CTyping_ih; eauto.
   - (* WPair *)
     eapply T_WPair; eauto.
     + specialize (IHTyping1 x (q_C + psi0) A (meet_ctx_l q_C W1) (meet_ctx_l q_C W2)).
@@ -396,10 +390,9 @@ Proof.
       unfold subst_ctx.
       solve_uniq.
   - (* SSigma *)
-    fresh_apply_Typing y; eauto. 
-    eapply IHTyping; eauto.
+    fresh_apply_Typing y; eauto.
     repeat spec y.
-    subst_CTyping_ih.
+    subst_CTyping_ih; eauto.
   - (* SPair *)
     eapply T_SPair; eauto.
     + specialize (IHTyping1 x (q_C + psi0) A (meet_ctx_l q_C W1) (meet_ctx_l q_C W2)).
@@ -411,11 +404,9 @@ Proof.
       rewrite subst_tm_tm_open_tm_wrt_tm in IHTyping3; eauto using CTyping_lc1.
   - (* Proj1 *)
     eapply T_Proj1; eauto.
-    simpl in IHTyping; eauto.
   - (* Proj2 *)
     rewrite subst_tm_tm_open_tm_wrt_tm; eauto using CTyping_lc1.    
-    eapply T_Proj2; eauto. fold subst_tm_tm.
-    simpl in IHTyping; eauto.
+    eapply T_Proj2; eauto. 
   - (* Sum *)
     eauto.
   - (* Inj1 *)

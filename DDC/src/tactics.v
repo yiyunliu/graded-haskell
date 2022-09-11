@@ -104,6 +104,7 @@ Ltac fresh_apply_DefEq x :=
       | [ |- DefEq ?P ?psi (a_SSigma ?psi2 ?a ?b) (a_SSigma ?psi3 ?a2 ?b2) ] => pick fresh x and apply Eq_SSigma
       | [ |- DefEq ?P ?psi (a_Abs ?psi2 ?A1 ?b) (a_Abs ?psi3 ?A2 ?b3) ] => pick fresh x and apply Eq_Abs
       | [ |- DefEq ?P ?psi (a_LetPair ?psi2 ?a ?b) (a_LetPair ?psi3 ?a2 ?b2)  ] => pick fresh x and apply Eq_LetPair
+      | [ |- DefEq ?P ?psi (open_tm_wrt_tm ?b1 ?a1) (open_tm_wrt_tm ?b2 ?a2)] => pick fresh x and apply Eq_SubstIrrel
     end.
 
 Ltac fresh_apply_Par x := 

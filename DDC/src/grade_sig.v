@@ -229,3 +229,43 @@ Qed.
 End GradeFacts.
 
 
+From Ltac2 Require Import Ltac2.
+From Hammer Require Import Hammer Tactics.
+From Equations Require Import Equations.
+
+Inductive lexp : Set :=
+| Var : grade -> lexp
+| Q_C : lexp
+| Q_Top : lexp
+| Meet : lexp -> lexp -> lexp
+| Join : lexp -> lexp -> lexp.
+
+Fixpoint denoteLexp (e : lexp) : grade :=
+  match e with
+  | Var a => a
+  | Meet e1 e2 => denoteLexp e1 + denoteLexp e2
+  | Join e1 e2 => denoteLexp e1 * denoteLexp e2
+  | Q_Top => q_Top
+  | Q_C => q_C
+  end.
+
+Fixpoint lexp_size (e : lexp) :=
+  match e with
+  | Var _ => 0
+  | Q_C => 0
+  | Q_Top => 0
+  | Meet e1 e2 => 1 + lexp_size e1 + lexp_size e2
+  | Join e1 e2 => 1 + lexp_size e1 + lexp_size e2
+  end.
+
+From Equations Require Import Equations.
+Local Open Scope grade_scope.
+
+#[tactic="sfirstorder"] Equations splitLeq (e1 : lexp) (e2 : lexp) : Prop
+  by wf ((lexp_size e1 + lexp_size e2)%nat) lt :=
+  splitLeq (Meet a1) (Meet )
+  splitLeq (Var a1) (Var a2) => a1 <= a2;
+  splitLeq (Join e11 e12) e2 => splitLeq e11 e2 /\ splitLeq e12 e2;
+  splitLeq e1 (Meet e21 e22) => splitLeq e1 e21 /\ splitLeq e1 e22;
+  splitLeq e1 (Join e21 e22) => splitLeq e1 e21 \/ splitLeq e1 e22 \/ (leq_lat (denoteLexp e1) (denoteLexp (Join e21 e22))) ;
+                               splitLeq (Meet e11 e12) e2 => splitLeq e11 e2 \/ splitLeq e12 e2 \/ (leq_lat (denoteLexp (Meet e11 e12)) (denoteLexp e2)).

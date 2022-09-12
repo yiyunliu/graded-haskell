@@ -122,8 +122,10 @@ Ltac fresh_apply_Typing x :=
       | [ |- Typing ?P ?psi (a_Pi ?psi2 ?a ?b) _ ] => pick fresh x and apply T_Pi
       | [ |- Typing ?P ?psi (a_WSigma ?psi2 ?a ?b) _ ] => pick fresh x and apply T_WSigma
       | [ |- Typing ?P ?psi (a_SSigma ?psi2 ?a ?b) _ ] => pick fresh x and apply T_SSigma
-      | [ |- Typing ?P ?psi (a_Abs ?psi2 ?A ?b) _ ] => pick fresh x and apply T_Abs
-      | [ |- Typing ?P ?psi (a_LetPair ?psi2 ?a ?b) _ ] => pick fresh x and apply T_LetPair
+      | [ _ : q_C < ?psi |- Typing ?P ?psi (a_Abs ?psi2 ?A ?b) _ ] => pick fresh x and apply T_AbsIrrel
+      | [ _ : ?psi2 <= q_C \/ ?psi <= q_C  |- Typing ?P ?psi (a_Abs ?psi2 ?A ?b) _ ] => pick fresh x and apply T_Abs
+      | [ _ : q_C < ?psi |- Typing ?P ?psi (a_LetPair ?psi2 ?a ?b) _ ] => pick fresh x and apply T_LetPairIrrel
+      | [ _ : ?psi <= q_C \/ ?psi2 <= q_C |- Typing ?P ?psi (a_LetPair ?psi2 ?a ?b) _ ] => pick fresh x and apply T_LetPair
       | [ |- Typing ?P ?psi (a_Case ?psi2 ?a ?b1 ?b2) _ ] => pick fresh x and apply T_Case
     end.
 

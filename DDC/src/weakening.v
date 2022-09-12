@@ -165,20 +165,15 @@ Proof.
   all: intros; subst; eauto 3 using DefEq_weakening_middle.
   all: have UL1: uniq (meet_ctx_l q_C W2 ++ meet_ctx_l q_C W ++ meet_ctx_l q_C W1) by
     unfold meet_ctx_l; solve_uniq.
-  all: have UL2: uniq (labels (meet_ctx_l q_C W2) ++ labels (meet_ctx_l q_C W) ++ labels (meet_ctx_l q_C W1)) by
-   unfold labels; solve_uniq.
+  all: have UL2: uniq (labels W2 ++ labels W ++ labels W1) by
+    unfold labels; solve_uniq.
+  all: have UL3: uniq (labels (meet_ctx_l q_C W2) ++ labels (meet_ctx_l q_C W) ++ labels (meet_ctx_l q_C W1)) by
+    unfold labels; solve_uniq.
   (* easy cases *)
   all: try solve [eapply T_App; eauto].
   all: try solve [
-             eapply T_AppIrrel; simpl_env; eauto;
-             eapply IHh2; simpl_env; eauto].
-  all: try solve [
              eapply T_WPair; simpl_env; eauto;
              eapply IHh1; simpl_env; eauto].
-  all: try solve [
-             eapply T_WPairIrrel; simpl_env; eauto;
-             try eapply IHh1; simpl_env; eauto;
-             try eapply IHh2; simpl_env; eauto].
   all: try solve [
              eapply T_SPair; simpl_env; eauto;
              try eapply IHh1; simpl_env; eauto;
@@ -193,7 +188,6 @@ Proof.
   all: try solve [
              eapply T_Inj2; simpl_env; eauto;
              eapply IHh2; simpl_env; eauto].
-  all: try solve [eapply T_Eq; simpl_env; eauto].
   
   (* conversion *)
   all: try match goal with [ H : DefEq _ _ _ _ |- _ ] => 
@@ -203,40 +197,68 @@ Proof.
 
   (* pi *)
   subst; fresh_apply_Typing x; eauto 1; auto; repeat spec x;
-  match goal with 
+  lazymatch goal with 
   | [ H2 : forall F0 G0, [(?x, ?psi0)] ++ ?F ++ ?G ~= F0 ++ G0 -> _ |- _ ]
     => specialize (H2 ([(x,psi0)] ++ F) G ltac:(simpl_env;eauto 3));
   simpl_env in H2; eauto 3; try eapply H2; try solve_uniq end.
 
+  (* absirrel *)
+  subst; fresh_apply_Typing x; simpl_env; try eapply IHh; simpl_env; eauto; repeat spec x.
+  lazymatch goal with 
+  | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ meet_ctx_l q_C (?F ++ ?G) ~= F0 ++ G0 -> _ |- _ ]
+    => specialize (H3 ([(x,psi0)] ++ meet_ctx_l q_C F) (meet_ctx_l q_C G) ltac:(simpl_env;eauto 3) (meet_ctx_l q_C W)) ;
+      simpl_env in H3 ; eauto 3; try eapply H3;  rewrite /meet_ctx_l; solve_uniq end.
+
   (* abs *)
-  subst; fresh_apply_Typing x; simpl_env; try eapply IHh; simpl_env; eauto; repeat spec x;
-  try match goal with 
+  subst; fresh_apply_Typing x; simpl_env; try eapply IHh; simpl_env; eauto; repeat spec x.
+  lazymatch goal with 
   | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ ?F ++ ?G ~= F0 ++ G0 -> _ |- _ ]
     => specialize (H3 ([(x,psi0)] ++ F) G ltac:(simpl_env;eauto 3) W) ;
-  simpl_env in H3 ; eauto 3; try eapply H3 end. 
+      simpl_env in H3 ; eauto 3; try eapply H3 end.
 
   (* wsigma *)
   subst; fresh_apply_Typing x; eauto 1; auto; repeat spec x;
-  match goal with 
+  lazymatch goal with 
   | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ ?F ++ ?G ~= F0 ++ G0 -> _ |- _ ]
     => specialize (H3 ([(x,psi0)] ++ F) G ltac:(simpl_env;eauto 3)) ;
   simpl_env in H3; eauto 3; try eapply H3; try solve_uniq end.
 
-  (* letpair *)
-  - subst; fresh_apply_Typing x.
-    + clear H H1 H2 IHh.
-    repeat spec x. simpl_env.
-    match goal with 
-    | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ meet_ctx_l q_C (?F ++ ?G) ~= F0 ++ G0 -> _ |- _ ] 
-      => specialize (H3 ([(x,psi0)] ++ meet_ctx_l q_C F) (meet_ctx_l q_C G) ltac:(simpl_env;eauto 3) (meet_ctx_l q_C W));
-          simpl_env in H3; eapply H3 end.
-    eapply uniq_cons_3; auto. repeat rewrite dom_app. repeat rewrite dom_meet_ctx_l. auto.
-    + eapply IHh; auto.
+  (* letpairirrel *)
+  - subst; fresh_apply_Typing x;
+      try lazymatch goal with
+          [|- _ < _] => assumption
+        | _ => auto
+      end.
+    + clear H H0 H1 H3 IHh.
+      repeat spec x. simpl_env.
+    lazymatch goal with 
+    | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ ?F ++ ?G ~= F0 ++ G0 -> _ |- _ ] 
+      => specialize (H3 ([(x,psi0)] ++ F) G ltac:(simpl_env;eauto 3)  W);
+          simpl_env in H3 ; eapply H3 end.
+    eapply uniq_cons_3; auto. 
+    + move => y Fry.
+      clear H H0 H1 IHh.
+      spec x. spec y.
+      specialize (H0 ([(x, (psi0 * psi,A))] ++ (meet_ctx_l q_C W2)) (meet_ctx_l q_C W1) ltac:(simpl_env; auto) (meet_ctx_l q_C W)).
+      simpl_env in H0.  simpl_env. eapply H0. rewrite /meet_ctx_l; by solve_uniq.
+  (* letpairrel *)
+  - subst; fresh_apply_Typing x;
+      try lazymatch goal with
+          [|- _ < _] => assumption
+        | _ => auto
+      end.
+    + clear H H0 H2 H3 IHh.
+      repeat spec x. simpl_env.
+    lazymatch goal with 
+    | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ ?F ++ ?G ~= F0 ++ G0 -> _ |- _ ] 
+      => specialize (H3 ([(x,psi0)] ++ F) G ltac:(simpl_env;eauto 3)  W);
+          simpl_env in H3 ; eapply H3 end.
+    eapply uniq_cons_3; auto. 
     + move => y Fry.
       clear H H0 H1 IHh.
       spec x. spec y.
       specialize (H0 ([(x, (psi0 * psi,A))] ++ W2) W1 ltac:(simpl_env; auto) W).
-      simpl_env in H0. eapply H0. solve_uniq.
+      simpl_env in H0.  simpl_env. eapply H0. solve_uniq.
 
   (* ssigma *)
   - subst; fresh_apply_Typing x; eauto 1; auto; repeat spec x;
@@ -248,12 +270,12 @@ Proof.
     fresh_apply_Typing x; auto.
     repeat spec x.
     simpl_env.
-    match goal with 
-    | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ meet_ctx_l q_C (?F ++ ?G) ~= F0 ++ G0 -> _ |- _ ]
-      => specialize (H3 ([(x,psi0)] ++ meet_ctx_l q_C F) (meet_ctx_l q_C G) ltac:(simpl_env;eauto 3)
-                   (meet_ctx_l q_C W));
+    lazymatch goal with 
+    | [ H3 : forall F0 G0, [(?x, ?psi0)] ++ (?F ++ ?G) ~= F0 ++ G0 -> _ |- _ ]
+      => specialize (H3 ([(x,psi0)] ++  F) G ltac:(simpl_env;eauto 3)
+                    W);
           simpl_env in H3 ; eapply H3 end.
-    eapply uniq_cons_3; auto. repeat rewrite dom_app. repeat rewrite dom_meet_ctx_l. auto.
+    eapply uniq_cons_3; auto. 
 Qed.    
 
 Lemma Typing_weakening : forall W1 q b B, 

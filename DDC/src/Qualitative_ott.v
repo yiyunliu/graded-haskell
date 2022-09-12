@@ -482,13 +482,14 @@ with GEq : econtext -> grade -> tm -> tm -> Prop :=    (* defn GEq *)
 (* defns JUnTyDefEq *)
 Inductive CDefEq : econtext -> grade -> grade -> tm -> tm -> Prop :=    (* defn CDefEq *)
  | CDefEq_Leq : forall (P:econtext) (phi phi0:grade) (a b:tm),
+      ( phi0  <=   q_C  )  ->
       ( phi0  <=  phi )  ->
      DefEq P phi a b ->
      CDefEq P phi phi0 a b
  | CDefEq_Nleq : forall (P:econtext) (phi phi0:grade) (a b:tm),
      lc_tm a ->
      lc_tm b ->
-      not (  (  ( phi0  <=  phi )  )  )  ->
+       (  not (  (  ( phi0  <=  phi )  )  )  )   \/   (  (  q_C   <  phi0 )  )   ->
       uniq  P  ->
      CDefEq P phi phi0 a b
 with DefEq : econtext -> grade -> tm -> tm -> Prop :=    (* defn DefEq *)

@@ -725,12 +725,13 @@ defn
  {{ tex [[ P ]] \vdash [[ a ]] \equiv_{[[ psi ]]} [[ b ]]  }}
 
 by
+   phi0 <= CTime
    phi0 <= phi
    P |- phi a == b 
   --------------------- :: Leq 
    P |- phi phi0 a == b
 
-   not (phi0 <= phi)
+   (not (phi0 <= phi)) \/ (CTime < phi0)
    uniq P
   --------------------- :: Nleq 
    P |- phi phi0 a == b

@@ -923,27 +923,22 @@ defn
   W |-- psi a : A ::  :: Typing :: 'T_' {{ com Typing }}
 {{ tex [[W]] \vdash [[a]]:^{[[psi]]} [[A]] }}
 
-%% morally, psi will either be RTime or CTime in this judgement. It should never be Top.
-%% If it needs to be top, it should be squashed instead.
-
  by
 
 uniq W
-psi <= CTime
 axiom s1 s2 
 -------------------------- :: Type
 W |-- psi type s1 : type s2
 
 W |-- psi a : A
-|CTime /\ W| |- CTime A == B 
-CTime /\ W |-- CTime B : type s
+|W| |- top A == B 
+W |-- top B : type s
 ------------------------------- :: Conv
 W |-- psi a : B
 
 uniq W
 psi0 <= psi
 x : psi0 A in W
-psi <= CTime
 --------------------------------------------- :: Var
 W |-- psi x : A
 
@@ -955,24 +950,24 @@ rule s1 s2 s3
 --------------------------------------- :: Pi
 W |-- psi Pi x :psi0 A. B : type s3
 
-W ++ x : psi0  \/ psi A |-- psi b : B
-CTime /\ W |-- CTime (Pi x:psi0 A. B) : type s
+CTime < psi0
+CTime < psi
+(CTime /\ W) ++ x : psi0 A |-- CTime b : B
+W |-- top (Pi x:psi0 A. B) : type s
+----------------------------------------------- :: AbsIrrel
+W |-- psi \ psi0 x : A . b : Pi x :psi0 A . B
+
+(psi0 <= CTime) \/ (psi <= CTime)
+W ++ x : psi0 A |-- psi b : B
+W |-- top (Pi x:psi0 A. B) : type s
 ----------------------------------------------- :: Abs
 W |-- psi \ psi0 x : A . b : Pi x :psi0 A . B
 
+
 W |-- psi b : Pi x :psi0 A . B
 W |-- psi0 \/ psi a : A
-psi0 <= CTime
 ------------------------------------------- :: App
 W |-- psi b psi0 a : B {a/x}
-
-W |-- psi b : Pi x :psi0 A . B
-CTime /\ W |-- CTime a : A
-CTime < psi0
-% not psi0 <= CTime
-------------------------------------------- :: AppIrrel
-W |-- psi b psi0 a : B {a/x}
-
 
 %% weak sigmas
 
@@ -982,25 +977,26 @@ rule s1 s2 s3
 ---------------------------------------- :: WSigma
 W |-- psi Sigma x :psi0 A . B : type s3
 
-CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
+W |-- top (Sigma x :psi0 A. B) : type s
 W |-- psi0 \/ psi a : A
 W |-- psi b : B {a/x}
-psi0  <= CTime
 ------------------------------------------ :: WPair
 W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
 
-CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
-CTime /\ W |-- CTime a : A
+%++ z :psi1 Sigma x :psi0 A. B
 CTime < psi0
-% not psi0 <= CTime
-W |-- psi b : B {a/x}
------------------------------------------- :: WPairIrrel
-W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
-
-
+CTime < psi
+W |-- top (Pi y : psi B. C) : type s
+W |-- psi a : (Sigma x :psi0 A . B)
+(# (CTime /\ W) ++ x :psi0 A #)  |-- CTime c : (Pi y : phi B. C)
+%  needs this substitution above C {(x psi0, y)/z}
+%  and this one below C {a/z}
+------------------------------------------------------------- :: LetPairIrrel
+W |-- psi let (x psi0 , ) = a in c : C 
 
 %++ z :psi1 Sigma x :psi0 A. B
-CTime /\ W |-- CTime (Pi y : psi B. C) : type s
+(psi <= CTime) \/ (psi0 <= CTime)
+W |-- top (Pi y : psi B. C) : type s
 W |-- psi a : (Sigma x :psi0 A . B)
 (# W ++ x :psi0 \/ psi A #)  |-- psi c : (Pi y : phi B. C)
 %  needs this substitution above C {(x psi0, y)/z}
@@ -1017,10 +1013,9 @@ rule s1 s2 s3
 ---------------------------------------- :: SSigma
 W |-- psi x :psi0 A && B : type s3
 
-CTime /\ W |-- CTime x:psi0 A && B : type s
+W |-- top x:psi0 A && B : type s
 W |-- psi0 \/ psi a : A
 W |-- psi b : B {a/x}
-psi0 <= CTime
 ------------------------------------------ :: SPair
 W |-- psi (a psi0 & b) : x :psi0 A && B
 
@@ -1032,7 +1027,6 @@ psi0 <= psi
 W |-- psi fst psi0 a : A
 
 W |-- psi a : x :psi0 A && B
-psi0 <= CTime 
 ----------------------------------- :: Proj2
 W |-- psi snd psi0 a : B {fst psi0 a / x}
 
@@ -1044,16 +1038,16 @@ W |-- psi B : type s
 W |-- psi A + B : type s
 
 W |-- psi a1 : A1
-CTime /\ W |-- CTime A1 + A2 : type s
+W |-- top A1 + A2 : type s
 -------------------------------- :: Inj1
 W |-- psi inj1 a1 : A1 + A2
 
 W |-- psi a2 : A2
-CTime /\ W |-- CTime A1 + A2 : type s
+W |-- top A1 + A2 : type s
 --------------------------------- :: Inj2
 W |-- psi inj2 a2 : A1 + A2
 
-((CTime /\ W) ++ z :CTime A1 + A2) |-- CTime  B : type s
+(W ++ z :CTime A1 + A2) |-- top  B : type s
 W |-- psi a : A1 + A2
 B1 = (# B {inj1 x / z} #)
 B2 = (# B {inj2 y / z} #)
@@ -1066,12 +1060,10 @@ W |-- psi case psi0 a of b1; b2 : B {a/z}
 %% unit
 
 uniq W
-psi <= CTime
 -------------------------- :: TmUnit
 W |-- psi Unit : type s
 
 uniq W
-psi <= CTime
 -------------------------- :: TyUnit
 W |-- psi unit : Unit
 

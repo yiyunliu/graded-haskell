@@ -109,7 +109,7 @@ clean: coqclean
 # fix typing rules for LetPair and Case that cannot be expressed with Ott's locally nameless
 # backend
 PATCH_TYPING_%:
-	patch -R $*.v < typing.patch
+	patch -R $*.v < typing_new.patch
 
 # delete lines from _inf.v file corresponding to "grade".  Need to update this 
 # when .ott file is changed

@@ -338,10 +338,11 @@ Lemma Typing_lc1 :
   Typing P phi a b -> lc_tm a).
 Proof.
   induction 1.
-  all: intros; split_hyp; repeat invert_lc; eauto using Grade_lc.  
-  pick fresh x; repeat spec x.
-  pick fresh y; repeat spec y.
-  eapply lc_a_LetPair_exists; eauto.
+  all: intros; split_hyp; repeat invert_lc; eauto using Grade_lc.
+  all : 
+    pick fresh x; repeat spec x;
+    pick fresh y; repeat spec y;
+    eapply lc_a_LetPair_exists; eauto.
 Qed.
 
 Lemma CTyping_lc1 : forall W q a A, CTyping W q a A -> lc_tm a. 

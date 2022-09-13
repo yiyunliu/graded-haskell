@@ -115,7 +115,49 @@ Qed.
   phi =     phi .=
      b1' .-> b2'
 
-*)
+ *)
+Definition lam_x_x := a_Abs (q_C) a_TyUnit (a_Var_b 0).
+Definition lam_x_x_x := a_Abs (q_C) a_TyUnit (a_App (a_Var_b 0) q_C (a_Var_b 0)).
+
+Axiom q_C_lt_q_Top : q_C < q_Top.
+
+Lemma counterexample : GEq nil q_C (a_App lam_x_x q_Top lam_x_x) (a_App lam_x_x q_Top lam_x_x_x).
+Proof.
+  eapply GEq_App.
+  pick fresh y and apply GEq_Abs.
+  unfold open_tm_wrt_tm.
+  simpl.
+  eapply GEq_Var; eauto.
+  reflexivity.
+  destruct (order_q_C_dec q_Top).
+  eapply CEq_Leq; eauto.
+  eapply CEq_Nleq; eauto.
+  unfold q_lt in q.
+  destruct q.
+  intros H1.
+  have h0 : q_C = q_Top.
+  eapply q_leb_antisym; eauto.
+  congruence.
+  eapply CEq_Nleq; eauto.
+  constructor; eauto.
+  intros x. unfold open_tm_wrt_tm; simpl.
+  eauto.
+  constructor; eauto.
+  intros x. unfold open_tm_wrt_tm; simpl.
+  eauto.
+  intros H.
+  have h := q_C_lt_q_Top.
+  destruct h.
+  have h0 : q_C = q_Top.
+  eapply q_leb_antisym; eauto.
+  congruence.
+Qed.
+
+Lemma counterexample1 : Step (a_App lam_x_x q_Top lam_x_x) lam_x_x.
+Proof.
+  unfold lam_x_x.
+  (* The label is already affecting the semantics!!!! *)
+  eapply S_Beta.
 
 Lemma CEq_GEq_respects_Step :
   (forall P phi phi0 b1 b1',

@@ -6,6 +6,12 @@ Require Import Coq.Structures.Orders.
 Require Import Coq.Bool.Sumbool.
 Require Import Coq.Program.Equality.
 Require Import ssreflect.
+From Equations Require Import Equations.
+From Ltac2 Require Import Ltac2.
+Set Default Proof Mode "Classic".
+
+
+
 
 Module Type GradeSig.
 
@@ -158,42 +164,62 @@ Proof.
   intros. apply leq_join. apply join_leq in H. apply join_leq in H0.
   rewrite <- join_assoc. rewrite H0. auto. Qed.
 
+From Hammer Require Import Hammer Tactics.
+
+Lemma lub_join : forall a b c,
+    a * b <= c -> a <= c /\ b <= c.
+Proof.
+  sfirstorder use: q_leb_trans, leq_join_l, leq_join_r.
+Qed.
+
+Lemma join_lub_iff : forall a b c,
+    a <= c /\ b <= c <-> a * b <= c.
+Proof.
+  strivial use: lub_join, join_lub.
+Qed.
+
+Lemma meet_glb : forall a b c,
+    a <= b -> a <= c -> a <= b + c.
+Proof.
+  hauto lq: on drew: off use: leq_meet, meet_assoc, meet_leq.
+Qed.
+
+Lemma glb_meet : forall a b c,
+    a <= b + c -> a <= b /\ a <= c.
+Proof.
+  hauto drew: off use: meet_comm, meet_assoc, meet_idem, meet_leq, leq_meet.
+Qed.
+
+Lemma meet_glb_iff : forall a b c,
+    a <= b /\ a <= c <-> a <= b + c.
+Proof.
+  sfirstorder use: glb_meet, meet_glb.
+Qed.
+
 Lemma leq_meet_l : forall a b, a + b <= a.
-Proof. intros. apply leq_meet. rewrite (meet_comm a b). 
-       rewrite <- meet_assoc.
-       rewrite meet_idem. auto. Qed.
+Proof.
+  qauto use: absorb_meet, leq_join, join_comm.
+Qed.
 
 Lemma leq_meet_r : forall a b, a + b <= b.
-Proof. intros. apply leq_meet.
-       rewrite <- meet_assoc. rewrite meet_idem. auto. Qed.
+Proof.
+  scongruence use: leq_meet_l, meet_comm.
+Qed.
 
 Lemma po_meet_l : forall a b c , a <= b -> a + c <= b + c.
-Proof. 
-  intros. apply leq_meet. apply meet_leq in H.
-  rewrite meet_assoc. 
-  replace (a + c + b + c) with (a + (c + b) + c).
-  rewrite (meet_comm c b). rewrite meet_assoc.
-  rewrite H. rewrite <- meet_assoc. rewrite meet_idem. auto.
-  rewrite meet_assoc. auto.
+Proof.
+  hauto use: leq_meet_l, q_leb_trans, meet_glb, leq_meet_r.
 Qed.
 
 Lemma po_meet_r : forall a b c , a <= b -> c + a <= c + b.
-Proof. intros. rewrite meet_comm. rewrite (meet_comm c b).
-       apply po_meet_l. auto. Qed.
-
-
-Lemma still_higher : forall a b,
-  q_C < a -> b <= q_C -> q_C < a * b.
 Proof.
-  intros. inversion H. 
-  apply join_leq in H0. apply join_leq in H1. 
-  split. 
-  - apply leq_join. 
-    rewrite join_assoc. rewrite H1. auto.
-  - move => h. apply H2. apply q_leb_antisym. apply leq_join. auto.
-    apply leq_join.
-    rewrite <- H0. rewrite join_assoc. rewrite <- h. rewrite join_idem. 
-    symmetry. auto.
+  hauto use: meet_comm, po_meet_l.
+Qed.
+
+Lemma still_higher : forall a b c,
+  c < a -> b <= c -> c < a * b.
+Proof.
+  qauto use: join_comm, po_join_r, join_leq, q_leb_trans unfold: q_lt.
 Qed.
 
 Lemma meet_mult : forall {a b}, 
@@ -225,17 +251,33 @@ Lemma not_leq_lower : forall {psi psi0 phi},
 Proof.
   intros. move=> h. apply H0. transitivity psi; auto. 
 Qed.
- 
+
+Lemma top_leq_eq : forall a,
+    q_Top <= a -> a = q_Top.
+Proof.
+  sfirstorder use: join_Top_l, join_leq.
+Qed.
+
+Lemma leq_meet_prime (e1 e2 e3 : grade) :
+  e1 <= e3 \/ e2 <= e3 -> (e1 + e2) <= e3.
+Proof.
+  qauto use: meet_assoc, meet_comm, absorb_join, leq_meet, meet_leq, join_leq.
+Qed.
+
+Lemma leq_join_prime (e1 e2 e3 : grade) :
+  e1 <= e2 \/ e1 <= e3 -> e1 <= (e2 * e3).
+Proof.
+  intros.
+  hecrush l:on use: join_assoc, leq_join, join_leq, join_comm.
+Qed.
+
 End GradeFacts.
 
 
-From Ltac2 Require Import Ltac2.
-From Hammer Require Import Hammer Tactics.
-From Equations Require Import Equations.
 
 Inductive lexp : Set :=
 | Var : grade -> lexp
-| Q_C : lexp
+(* | Q_C : lexp *)
 | Q_Top : lexp
 | Meet : lexp -> lexp -> lexp
 | Join : lexp -> lexp -> lexp.
@@ -246,26 +288,128 @@ Fixpoint denoteLexp (e : lexp) : grade :=
   | Meet e1 e2 => denoteLexp e1 + denoteLexp e2
   | Join e1 e2 => denoteLexp e1 * denoteLexp e2
   | Q_Top => q_Top
-  | Q_C => q_C
+  (* | Q_C => q_C *)
   end.
 
 Fixpoint lexp_size (e : lexp) :=
   match e with
   | Var _ => 0
-  | Q_C => 0
+  (* | Q_C => 0 *)
   | Q_Top => 0
   | Meet e1 e2 => 1 + lexp_size e1 + lexp_size e2
   | Join e1 e2 => 1 + lexp_size e1 + lexp_size e2
   end.
 
-From Equations Require Import Equations.
 Local Open Scope grade_scope.
 
 #[tactic="sfirstorder"] Equations splitLeq (e1 : lexp) (e2 : lexp) : Prop
   by wf ((lexp_size e1 + lexp_size e2)%nat) lt :=
-  splitLeq (Meet a1) (Meet )
+  splitLeq _ Q_Top =>  True;
+  splitLeq Q_Top e => q_Top = denoteLexp e;
   splitLeq (Var a1) (Var a2) => a1 <= a2;
   splitLeq (Join e11 e12) e2 => splitLeq e11 e2 /\ splitLeq e12 e2;
   splitLeq e1 (Meet e21 e22) => splitLeq e1 e21 /\ splitLeq e1 e22;
-  splitLeq e1 (Join e21 e22) => splitLeq e1 e21 \/ splitLeq e1 e22 \/ (leq_lat (denoteLexp e1) (denoteLexp (Join e21 e22))) ;
-                               splitLeq (Meet e11 e12) e2 => splitLeq e11 e2 \/ splitLeq e12 e2 \/ (leq_lat (denoteLexp (Meet e11 e12)) (denoteLexp e2)).
+  splitLeq e1 (Join e21 e22) => splitLeq e1 e21 \/ splitLeq e1 e22 \/ (denoteLexp e1) <= (denoteLexp (Join e21 e22)) ;
+  splitLeq (Meet e11 e12) e2 => splitLeq e11 e2 \/ splitLeq e12 e2 \/ (denoteLexp (Meet e11 e12)) <= (denoteLexp e2).
+
+#[tactic="sfirstorder"] Equations splitLeqForward (e1 : lexp) (e2 : lexp) : Prop
+  by wf ((lexp_size e1 + lexp_size e2)%nat) lt :=
+  splitLeqForward _ Q_Top =>  True;
+  splitLeqForward Q_Top e => q_Top = denoteLexp e;
+  splitLeqForward (Var a1) (Var a2) => a1 <= a2;
+  splitLeqForward (Join e11 e12) e2 => splitLeqForward e11 e2 /\ splitLeqForward e12 e2;
+  splitLeqForward e1 (Meet e21 e22) => splitLeqForward e1 e21 /\ splitLeqForward e1 e22;
+  splitLeqForward e1 e2 => denoteLexp e1 <= denoteLexp e2.
+
+
+#[export] Hint Rewrite <- join_lub_iff meet_glb_iff : lat_2.
+#[export] Hint Resolve leq_join_prime leq_meet_prime : lat_db.
+
+(* Transforming goal *)
+Theorem splitLeq_sound (e1 e2 : lexp) :
+  splitLeq e1 e2 ->  (denoteLexp e1) <= (denoteLexp e2).
+Proof.
+  intros.
+  Check splitLeq_graph_correct.
+  have h0 := splitLeq_graph_correct e1 e2.
+  remember (splitLeq e1 e2) as p.
+  induction h0 using splitLeq_graph_rect;
+    sauto use: leq_meet_prime, leq_join_prime, join_lub_iff, meet_glb_iff, leq_Top, top_leq_eq.
+ Qed.
+
+Theorem splitLeq_complete (e1 e2 : lexp) :
+  (denoteLexp e1) <= (denoteLexp e2) -> splitLeq e1 e2.
+Proof.
+  intros.
+  have h0 := splitLeq_graph_correct e1 e2.
+  remember (splitLeq e1 e2) as p.
+  induction h0 using splitLeq_graph_rect;
+    sauto use: leq_meet_prime, leq_join_prime, join_lub_iff, meet_glb_iff, leq_Top, top_leq_eq.
+Qed.
+
+Theorem splitLeqForward_complete  (e1 e2 : lexp) :
+   (denoteLexp e1) <= (denoteLexp e2) -> splitLeqForward e1 e2.
+Proof.
+  move => H0.
+  have h0 := splitLeqForward_graph_correct e1 e2.
+  remember (splitLeqForward e1 e2) as p.
+  induction h0 using splitLeqForward_graph_rect;
+    sauto lq: on use: leq_meet_prime, leq_join_prime, join_lub_iff, meet_glb_iff, leq_Top, top_leq_eq.
+Qed.
+
+Ltac2 rec reify_lexp (e : constr) :=
+  lazy_match! e with
+  | ?a1 + ?a2 =>
+    let e1 := reify_lexp a1 in
+    let e2 := reify_lexp a2 in
+    '(Meet $e1 $e2)
+  | ?a1 * ?a2 =>
+    let e1 := reify_lexp a1 in
+    let e2 := reify_lexp a2 in
+    '(Join $e1 $e2)
+  | q_Top =>
+    'q_Top
+  | ?e => '(Var $e)
+  end.
+
+Ltac2 simplify_lattice_hyp (id : ident) (ty : constr) : unit :=
+  simpl in $id;
+  lazy_match! ty with
+  | ?a1 <= ?a2 =>
+      let e1 := reify_lexp a1 in
+      let e2 := reify_lexp a2 in
+      apply (splitLeqForward_complete $e1 $e2) in $id;
+      ltac1:(h1 |- simp splitLeqForward in h1) (Ltac1.of_ident id);
+      simpl in $id
+  (* TODO: keep the equalities about lattices *)
+  | _ => clear id
+  end.
+
+Ltac2 simplify_lattice_hyps () : unit :=
+  (* iterate through the list of hypotheses *)
+  List.iter
+    (fun (id, _, ty) =>
+       simplify_lattice_hyp id ty)
+    (Control.hyps ()).
+
+Ltac2 simplify_lattice_goal () : unit :=
+  simpl; intros;
+  lazy_match! goal with
+  | [|- ?a1 <= ?a2] =>
+    let e1 := reify_lexp a1 in
+    let e2 := reify_lexp a2 in
+    apply (splitLeq_sound $e1 $e2); ltac1:(simp splitLeq)
+  | [|- _] =>
+      ltac1:(exfalso)
+  end.
+
+(* TODO: parameterize solve_lattice by a base case tactic for handling the leaves? *)
+Ltac2 solve_lattice () :=
+  solve [
+  simplify_lattice_goal ();
+  simplify_lattice_hyps ();
+  ltac1:(eauto using q_leb_refl, q_leb_trans, q_leb_antisym)].
+
+Ltac2 Notation "solve_lattice" := solve_lattice ().
+
+Ltac solve_lattice := ltac2:(solve_lattice).

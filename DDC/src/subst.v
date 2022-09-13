@@ -53,7 +53,7 @@ Proof.
   intros.
   destruct (q_leb psi phi) eqn:LE.
   eapply CG_Leq; eauto.
-  eapply CG_Nleq; eauto using Grade_uniq, Grade_lc. rewrite LE. done.
+  eapply CG_Nleq; eauto using Grade_uniq, Grade_lc.
 Qed.
 
 Local Hint Resolve Grade_CGrade : core.
@@ -173,10 +173,11 @@ Proof.
     eapply Grade_weakening_middle; eauto.
     eapply G_Var; eauto.
     solve_uniq.
-  - eapply Grade_substitution_irrel  with (P2 := nil) (P1 := ([(x, psi0)] ++ P)); simpl_env. 2: eauto.
-    eapply Grade_weakening_middle; eauto.
-    rewrite LE. done.
-    auto.
+  - eapply Grade_substitution_irrel  with (P2 := nil) (P1 := ([(x, psi0)] ++ P)); simpl_env;
+      lazymatch goal with
+        [ |-context [Grade] ] => eapply Grade_weakening_middle; eauto
+      | _ => eauto
+      end.
 Qed.
 
 Ltac exists_apply_Grade x :=
@@ -276,7 +277,6 @@ Proof.
   + eapply CEq_Leq; eauto.
     eapply GEq_refl; eauto.
   + eapply CEq_Nleq; eauto using Grade_uniq, Grade_lc.
-    rewrite LE. done.
 Qed.
 
 
@@ -547,7 +547,6 @@ Proof.
     solve_uniq.
   - eapply subst2_irrel; eauto.
     eapply Par_weakening_middle; eauto.
-    rewrite LE. done.
 Qed.
 
 Ltac exists_apply_Par x :=

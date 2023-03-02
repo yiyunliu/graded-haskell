@@ -138,6 +138,8 @@ context, W {{ tex \Omega }} :: 'ctx_' ::= {{ com contexts }}
 %   | W \/ phi        :: M  :: Join_r      {{ coq (join_ctx_r [[W]] [[phi]]) }}
    | phi /\ W        :: M  :: Meet_l      {{ coq (meet_ctx_l [[phi]] [[W]]) }}
 %   | W /\ phi        :: M  :: Meet_r      {{ coq (meet_ctx_r [[W]] [[phi]]) }}
+   | phi //\ W        :: M  :: Res_l       {{ coq (resurrect_l [[phi]] [[W]] }}
+                                           {{ tex [[phi]] \downarrow [[W]]}}
 
 
 econtext, P {{ tex \Phi }} :: 'ectx_' ::= {{ com erased contexts }}
@@ -931,21 +933,19 @@ defn
  by
 
 uniq W
-psi <= CTime
 axiom s1 s2 
 -------------------------- :: Type
 W |-- psi type s1 : type s2
 
 W |-- psi a : A
-|CTime /\ W| |- CTime A == B 
-CTime /\ W |-- CTime B : type s
+|top //\ W| |- psi0 A == B
+top //\ W |-- psi0 B : type s
 ------------------------------- :: Conv
 W |-- psi a : B
 
 uniq W
 psi0 <= psi
 x : psi0 A in W
-psi <= CTime
 --------------------------------------------- :: Var
 W |-- psi x : A
 
@@ -957,24 +957,16 @@ rule_pi s1 s2 s3
 --------------------------------------- :: Pi
 W |-- psi Pi x :psi0 A. B : type s3
 
-W ++ x : psi0  \/ psi A |-- psi b : B
-CTime /\ W |-- CTime (Pi x:psi0 A. B) : type s
+W ++ x : psi0 A |-- psi b : B
+top //\ W |-- psi1 (Pi x:psi0 A. B) : type s
 ----------------------------------------------- :: Abs
 W |-- psi \ psi0 x : A . b : Pi x :psi0 A . B
 
 W |-- psi b : Pi x :psi0 A . B
-W |-- psi0 \/ psi a : A
-psi0 <= CTime
+% psi //\ W can be seen as a way of declassification?
+psi //\ W |-- psi0 a : A
 ------------------------------------------- :: App
 W |-- psi b psi0 a : B {a/x}
-
-W |-- psi b : Pi x :psi0 A . B
-CTime /\ W |-- CTime a : A
-CTime < psi0
-% not psi0 <= CTime
-------------------------------------------- :: AppIrrel
-W |-- psi b psi0 a : B {a/x}
-
 
 %% weak sigmas
 
@@ -984,27 +976,26 @@ rule_sig s1 s2 s3
 ---------------------------------------- :: WSigma
 W |-- psi Sigma x :psi0 A . B : type s3
 
-CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
-W |-- psi0 \/ psi a : A
+top //\ W |-- CTime (Sigma x :psi0 A. B) : type s
+psi //\ W |-- psi0 a : A
 W |-- psi b : B {a/x}
-psi0  <= CTime
 ------------------------------------------ :: WPair
 W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
 
-CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
-CTime /\ W |-- CTime a : A
-CTime < psi0
-% not psi0 <= CTime
-W |-- psi b : B {a/x}
------------------------------------------- :: WPairIrrel
-W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
+% CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
+% CTime /\ W |-- CTime a : A
+% CTime < psi0
+% % not psi0 <= CTime
+% W |-- psi b : B {a/x}
+% ------------------------------------------ :: WPairIrrel
+% W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
 
 
 
 %++ z :psi1 Sigma x :psi0 A. B
-CTime /\ W |-- CTime (Pi y : psi B. C) : type s
+top //\ W |-- psi1 (Pi y : psi B. C) : type s
 W |-- psi a : (Sigma x :psi0 A . B)
-(# W ++ x :psi0 \/ psi A #)  |-- psi c : (Pi y : phi B. C)
+(# W ++ x :psi0 A #)  |-- psi c : (Pi y : phi B. C)
 %  needs this substitution above C {(x psi0, y)/z}
 %  and this one below C {a/z}
 ------------------------------------------------------------- :: LetPair
@@ -1019,10 +1010,9 @@ rule_sig s1 s2 s3
 ---------------------------------------- :: SSigma
 W |-- psi x :psi0 A && B : type s3
 
-CTime /\ W |-- CTime x:psi0 A && B : type s
-W |-- psi0 \/ psi a : A
+top //\ W |-- psi1 x:psi0 A && B : type s
+psi //\ W |-- psi0 a : A
 W |-- psi b : B {a/x}
-psi0 <= CTime
 ------------------------------------------ :: SPair
 W |-- psi (a psi0 & b) : x :psi0 A && B
 
@@ -1034,7 +1024,6 @@ psi0 <= psi
 W |-- psi fst psi0 a : A
 
 W |-- psi a : x :psi0 A && B
-psi0 <= CTime 
 ----------------------------------- :: Proj2
 W |-- psi snd psi0 a : B {fst psi0 a / x}
 

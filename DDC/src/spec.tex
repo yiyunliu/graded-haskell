@@ -20,12 +20,23 @@
 
 \admissiblefalse
 \begin{document}
-\maketitle
+% \maketitle
 
-\section{Type System}
+\begin{figure}
+  \centering
+\drules[T]{$ \Omega  \vdash  \ottnt{a} :^{ \ell }  \ottnt{A} $}{Typing}{Type,Conv,Var,Pi,Abs,App,WSigma,WPair, LetPair}
 
+  \begin{equation*}
+    \begin{split}
+       \ell  \downarrow  \varnothing  &=  \varnothing  \\
+        \ell  \downarrow  \Omega  ,   \ottmv{x} \! :^{ \ell_{{\mathrm{0}}} }\! \ottnt{A}   &=   \ell  \downarrow  \Omega  ,   \ottmv{x} \! :^{ \ell_{{\mathrm{0}}} }\! \ottnt{A}   \text{ if }  \neg  \ottsym{(}  \ell_{{\mathrm{0}}}  \leq  \ell  \ottsym{)}  \\
+        \ell  \downarrow  \Omega  ,   \ottmv{x} \! :^{ \ell_{{\mathrm{0}}} }\! \ottnt{A}   &=   \ell  \downarrow  \Omega  ,   \ottmv{x} \! :^{  { \color{black}{\bot} }  }\! \ottnt{A}   \text{ if } \ell_{{\mathrm{0}}}  \leq  \ell
+    \end{split}
+  \end{equation*}
+  \caption{Typing}
+  \label{fig:typing}
+\end{figure}
 
-\drules[T]{$ \Omega  \vdash  \ottnt{a} :^{ \ell }  \ottnt{A} $}{Typing}{Type,Conv,Var,Pi,Abs,App,WSigma,WPair, LetPair, SSigma, SPair, ProjOne, ProjTwo}
 
 
 \end{document}

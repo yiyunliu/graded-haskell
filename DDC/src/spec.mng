@@ -20,12 +20,23 @@
 
 \admissiblefalse
 \begin{document}
-\maketitle
+% \maketitle
 
-\section{Type System}
+\begin{figure}
+  \centering
+\drules[T]{$[[W |-- psi a : A]]$}{Typing}{Type,Conv,Var,Pi,Abs,App,WSigma,WPair, LetPair}
 
+  \begin{equation*}
+    \begin{split}
+      [[ psi //\ empty ]] &= [[empty]] \\
+      [[ psi //\ W ++ x : psi0 A ]] &= [[psi //\ W ++ x : psi0 A]] \text{ if } [[not (psi0 <= psi)]] \\
+      [[ psi //\ W ++ x : psi0 A ]] &= [[psi //\ W ++ x : bot A]] \text{ if } [[psi0 <= psi]]
+    \end{split}
+  \end{equation*}
+  \caption{Typing}
+  \label{fig:typing}
+\end{figure}
 
-\drules[T]{$[[W |-- psi a : A]]$}{Typing}{Type,Conv,Var,Pi,Abs,App,WSigma,WPair, LetPair, SSigma, SPair, ProjOne, ProjTwo}
 
 
 \end{document}

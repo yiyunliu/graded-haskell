@@ -22,7 +22,7 @@
 \begin{document}
 % \maketitle
 
-\begin{figure}
+\begin{figure}[http]
   \centering
 \drules[T]{$ \Omega  \vdash  \ottnt{a} :^{ \ell }  \ottnt{A} $}{Typing}{Type,Conv,Var,Pi,Abs,App,WSigma,WPair, LetPair}
 
@@ -37,6 +37,70 @@
   \label{fig:typing}
 \end{figure}
 
+Some high-level ideas on why the system is cool:
+\begin{itemize}
+\item It unifies the two relevance tracking mechanisms in DDC into a
+  single one. There is no special case for when $\ell$ is top. In
+  fact, the system does not even require a top element for the
+  labels.
+\item The system is expressive enough to encode strong
+  existentials. I believe all the interesting examples that DDC
+  supports are also supported in this reformulated system.
+\item During compile-time reasoning, this system can ignore more terms
+  than DDC. (todo: write down those examples) The expressiveness stems
+  from the fact that the system squashes the observer label more often
+  than DDC. (will explain what squash means in this system later)
+% \item A necessary condition for the system's consistency relies on
+%   $\ell$ being a linear order rather than a lattice. There should
+%   be no surprise why the system is more expressive: we do not do
+%   arbitrary information flow control and we focus specifically on
+%   relevance tracking. There's some important structure
+\item ...
+\end{itemize}
 
+Some notable changes compared to DDC:
+\begin{itemize}
+\item The labels $\ell$ must form a linear order. This is necessary
+for consistency to hold. It is okay for the linear order to be
+top-less.
+\item The typing judgment can take any label $\ell$. The base cases
+such as \rref{T-TYPE}, \rref{T-Var} no longer exclude the top element
+(in this reformulated version, $l$ may not even have a top
+element).
+\item Well-formedness for types are no longer checked at the top
+level.  Instead, we consider a type to be well-formed as long as there
+exists some label $\ell_{{\mathrm{1}}}$ where we can check the type. This design
+can be seen in both \rref{T-Abs} and \rref{T-Conv} (the
+notation $ \ell  \downarrow  \Omega $ will be explained in the next bullet point).
+\item The system introduces the squash operation $ \ell  \downarrow  \Omega $ (bottom of
+Figure~\ref{fig:typing}), which serves a similar function to
+resurrection but works slightly differently. Given a label $\ell$,
+$ \ell  \downarrow  \Omega $ returns a context with the labels visible at $\ell$
+squashed to bottom and everything else left unchanged. One use case of
+the squash operation can be found in \rref{T-App}. When applying
+a function $\ottnt{b}$ to a term $\ottnt{a}$ boxed at level $\ell_{{\mathrm{0}}}$,
+we squash $\Omega$ with the current label $\ell$ before checking
+$\ottnt{a}$ at level $\ell_{{\mathrm{0}}}$. This subsumes the two application rules
+from DDC. The squashing on the context is necessary so we can allow a
+relevant function to be applied to an irrelevant argument that appears
+in an irrelevant position. DDC implements this idea by joining $\ell$
+and $\ell_{{\mathrm{0}}}$ before checking $\ottnt{a}$. DDC's implementation loses
+some opportunities for compile-time irrelevance from raising the
+label. (need a few examples to explain this better)
+\item \Rref{T-Conv} shows how compile-time irrelevance is implemented
+  in the system. The equality between $\ottnt{A}$ and $\ottnt{B}$ is graded at
+  some level $\ell_{{\mathrm{0}}}$ rather than a specific top or run-time
+  irrelevant level. The intuition is as follows: If $\ottnt{A}$ is
+  well-graded at $\ell_{{\mathrm{0}}}$, then we are licensed to use any equalities
+  that are at level $\ell_{{\mathrm{0}}}$ or above. This is definitely
+  consistent. I can explain why that's the case in person. It relies
+  on a specific property about parallel reduction that I've already
+  proven in Coq (it's formulated in DE, but should be portable to DDC).
+\item The equality rules are omitted, though they do need to be
+  revised accordingly based on the the typing judgment presented
+  here. I want to refactor the equality rules so they are typed. I
+  find the well-graded judgment and graded equality much harder to
+  work with than a self-contained typed equality.
+\end{itemize}
 
 \end{document}

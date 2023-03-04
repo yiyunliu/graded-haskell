@@ -964,7 +964,7 @@ W |-- psi \ psi0 x : A . b : Pi x :psi0 A . B
 
 W |-- psi b : Pi x :psi0 A . B
 % psi //\ W can be seen as a way of declassification?
-psi //\ W |-- psi0 a : A
+psi0 //\ W |-- psi0 a : A
 ------------------------------------------- :: App
 W |-- psi b psi0 a : B {a/x}
 
@@ -977,7 +977,7 @@ rule_sig s1 s2 s3
 W |-- psi Sigma x :psi0 A . B : type s3
 
 top //\ W |-- CTime (Sigma x :psi0 A. B) : type s
-psi //\ W |-- psi0 a : A
+psi0 //\ W |-- psi0 a : A
 W |-- psi b : B {a/x}
 ------------------------------------------ :: WPair
 W |-- psi  (a psi0, b) : Sigma x :psi0 A. B

@@ -8,13 +8,16 @@ Parameter grade : Set.
 
 Parameter q_top : grade.
 Parameter q_bot : grade.
-
-Notation "⊤" := q_top.
-Notation "⊥" := q_bot.
-
 Parameter q_leqb  : grade -> grade -> bool.
 
-Infix "≤" := q_leqb (at level 70).
+Declare Scope grade_scope.
+Bind Scope grade_scope with grade.
+Local Open Scope grade_scope.
+
+Notation "⊤" := q_top : grade_scope.
+Notation "⊥" := q_bot : grade_scope.
+
+Infix "≤" := q_leqb (at level 70) : grade_scope.
 
 Axiom q_leqb_refl : reflexive q_leqb.
 

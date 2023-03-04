@@ -1,8 +1,10 @@
 embed
 {{ coq-preamble
 Require Export Metalib.LibLNgen. 
-Require Export Qual.grade_sig.
+Require Export Qual.grade_facts.
 Require Export Qual.sort_sig.
+From mathcomp Require Import ssreflect ssrbool.
+Close Scope bool_scope.
 }}
 
 metavar tmvar, x, y, z, f, g, n ::=
@@ -22,15 +24,15 @@ metavar qualityvar, m ::=
 grammar
 
 grade, psi {{ tex \ell }} , phi {{ tex k }} :: 'q_' ::=   {{ coq grade }}
-  | RTime                         :: M :: R  {{ tex { \color{black}{R} } }} {{ coq q_R }}
-  | CTime                         :: M :: C  {{ tex { \color{black}{C} } }} {{ coq q_C }}
-  | High                          :: M :: H  {{ tex { \color{black}{H} } }} {{ coq q_H }}
-  | Middle                        :: M :: M  {{ tex { \color{black}{M} } }} {{ coq q_M }}
-  | Low                           :: M :: L  {{ tex { \color{black}{L} } }} {{ coq q_L }}
-  | top                           :: M :: Top {{ tex { \color{black}{\top} } }} {{ coq q_Top }}
-  | bot                           :: M :: Bot {{ tex { \color{black}{\bot} } }} {{ coq q_Bot }}
-  | psi1 \/ psi2                  :: M :: Join {{ tex [[psi1]] \vee [[psi2]] }} {{ coq (q_join [[psi1]] [[psi2]]) }}
-  | psi1 /\ psi2                  :: M :: Meet {{ tex [[psi1]] \wedge [[psi2]] }} {{ coq (q_meet [[psi1]] [[psi2]]) }}
+  % | RTime                         :: M :: R  {{ tex { \color{black}{R} } }} {{ coq q_R }}
+  % | CTime                         :: M :: C  {{ tex { \color{black}{C} } }} {{ coq q_C }}
+  % | High                          :: M :: H  {{ tex { \color{black}{H} } }} {{ coq q_H }}
+  % | Middle                        :: M :: M  {{ tex { \color{black}{M} } }} {{ coq q_M }}
+  % | Low                           :: M :: L  {{ tex { \color{black}{L} } }} {{ coq q_L }}
+  | top                           :: M :: Top {{ tex { \color{black}{\top} } }} {{ coq ⊤ }}
+  | bot                           :: M :: Bot {{ tex { \color{black}{\bot} } }} {{ coq ⊥ }}
+  % | psi1 \/ psi2                  :: M :: Join {{ tex [[psi1]] \vee [[psi2]] }} {{ coq (q_join [[psi1]] [[psi2]]) }}
+  % | psi1 /\ psi2                  :: M :: Meet {{ tex [[psi1]] \wedge [[psi2]] }} {{ coq (q_meet [[psi1]] [[psi2]]) }}
   | ( psi )                       :: M :: paren {{ tex [[ psi ]] }} 
                                                 {{ coq ([[psi]]) }}
 
@@ -138,7 +140,7 @@ context, W {{ tex \Omega }} :: 'ctx_' ::= {{ com contexts }}
 %   | W \/ phi        :: M  :: Join_r      {{ coq (join_ctx_r [[W]] [[phi]]) }}
    | phi /\ W        :: M  :: Meet_l      {{ coq (meet_ctx_l [[phi]] [[W]]) }}
 %   | W /\ phi        :: M  :: Meet_r      {{ coq (meet_ctx_r [[W]] [[phi]]) }}
-   | phi //\ W        :: M  :: Res_l       {{ coq (resurrect_l [[phi]] [[W]] }}
+   | phi //\ W        :: M  :: Res_l       {{ coq (squash_ctx [[phi]] [[W]]) }}
                                            {{ tex [[phi]] \downarrow [[W]]}}
 
 
@@ -252,7 +254,7 @@ formula :: 'formula_' ::=
     {{ coq ([[D1]] = [[D2]]) }}
 
   | psi1 <= psi2              ::   :: subrho
-    {{ coq ([[psi1]] <= [[psi2]]) }}
+    {{ coq ([[psi1]] ≤ [[psi2]]) }}
   | psi1 < psi2               ::   :: ltrho
     {{ coq ([[psi1]] < [[psi2]]) }}
 
@@ -324,43 +326,8 @@ Definition labels : context -> econtext :=
 Definition subst_ctx (a : tm) (x:var) : context -> context :=
   map (fun '(g, A) => (g, (subst_tm_tm a x A))).
 
-Definition join_ctx_l (psi : grade) : context -> context :=    
-  map (fun '(g, A) => (psi * g, A)).
-
-Definition join_ctx_r (psi : grade) : context -> context :=
-  map (fun '(g, A) => (g * psi, A)).
-
-Definition meet_ctx_l (psi : grade) : context -> context :=
-  map (fun '(g, A) => (psi + g, A)).
-
-Definition meet_ctx_r (psi : grade) : context -> context :=
-  map (fun '(g, A) => (g + psi, A)).
-      
-
-Fixpoint close_tm_wrt_tm_rec (n1 : nat) (x1 : tmvar) (a1 : tm) {struct a1} : tm :=
-  match a1 with
-    | a_TyUnit => a_TyUnit
-    | a_TmUnit => a_TmUnit
-    | a_Pi psi1 A1 B1 => a_Pi psi1 (close_tm_wrt_tm_rec n1 x1 A1) (close_tm_wrt_tm_rec (S n1) x1 B1)
-    | a_Abs psi1 A1 a2 => a_Abs psi1 (close_tm_wrt_tm_rec n1 x1 A1) (close_tm_wrt_tm_rec (S n1) x1 a2)
-    | a_App a2 psi1 b1 => a_App (close_tm_wrt_tm_rec n1 x1 a2) psi1 (close_tm_wrt_tm_rec n1 x1 b1)
-    | a_Type s => a_Type s
-    | a_Var_f x2 => if (x1 == x2) then (a_Var_b n1) else (a_Var_f x2)
-    | a_Var_b n2 => if (lt_ge_dec n2 n1) then (a_Var_b n2) else (a_Var_b (S n2))
-    | a_Sum A1 A2 => a_Sum (close_tm_wrt_tm_rec n1 x1 A1) (close_tm_wrt_tm_rec n1 x1 A2)
-    | a_Inj1 a2 => a_Inj1 (close_tm_wrt_tm_rec n1 x1 a2)
-    | a_Inj2 a2 => a_Inj2 (close_tm_wrt_tm_rec n1 x1 a2)
-    | a_Case psi a2 b1 b2 => a_Case psi (close_tm_wrt_tm_rec n1 x1 a2) (close_tm_wrt_tm_rec n1 x1 b1) (close_tm_wrt_tm_rec n1 x1 b2)
-    | a_WSigma psi1 A1 B1 => a_WSigma psi1 (close_tm_wrt_tm_rec n1 x1 A1) (close_tm_wrt_tm_rec (S n1) x1 B1)
-    | a_WPair a2 psi1 b1 => a_WPair (close_tm_wrt_tm_rec n1 x1 a2) psi1 (close_tm_wrt_tm_rec n1 x1 b1)
-    | a_LetPair psi1 a2 b1 => a_LetPair psi1 (close_tm_wrt_tm_rec n1 x1 a2) (close_tm_wrt_tm_rec (S n1) x1 b1)
-    | a_SSigma psi1 A1 B1 => a_SSigma psi1 (close_tm_wrt_tm_rec n1 x1 A1) (close_tm_wrt_tm_rec (S n1) x1 B1)
-    | a_SPair a2 psi1 b1 => a_SPair (close_tm_wrt_tm_rec n1 x1 a2) psi1 (close_tm_wrt_tm_rec n1 x1 b1)
-    | a_Proj1 psi1 a2 => a_Proj1 psi1 (close_tm_wrt_tm_rec n1 x1 a2)
-    | a_Proj2 psi1 a2 => a_Proj2 psi1 (close_tm_wrt_tm_rec n1 x1 a2)
-  end.
-
-Definition close_tm_wrt_tm x1 a1 := close_tm_wrt_tm_rec 0 x1 a1.
+Definition squash_ctx (ψ : grade) : context -> context :=    
+  map (fun '(ψ0, A) => (ψ ⤓ ψ0, A)).
 
 }}
 
@@ -466,451 +433,8 @@ by
 ------------------------------------ :: ConsTm
   W1 ++ x:psi1 A <= W2 ++ x : psi2 A
 
-defns 
-   JGrade :: '' ::= 
-
-defn
- P |- psi phi a :: :: CGrade :: 'CG_' {{ com Guarded Grade }}
- {{ tex [[ P ]] \vdash_{[[ psi ]]}^{[[phi]]} [[ a ]]  }}
-
-by
-   phi0 <= phi
-   P |- phi a
-  --------------------- :: Leq 
-   P |- phi phi0 a
-
-   not (phi0 <= phi)
-   uniq P
-  --------------------- :: Nleq 
-   P |- phi phi0 a
-
-
-defn 
-  P |- psi a ::   :: Grade :: 'G_' {{ com Observable variables are bounded by their grades }}
-{{ tex [[P]] \vdash_{[[psi]]} [[a]] }}
-
-by
-
-uniq P
------------------ :: Type
-P |- psi type s
-
-uniq P
-psi0 <= psi
-x : psi0 in P 
------------------------------ :: Var
-P |- psi x 
-
-% functions
-
-P |- psi A 
-P ++ x : psi |- psi B 
---------------------------------- :: Pi
-P |- psi Pi x :psi0 A. B
-
-P ++ x :psi0 |- psi b
-P |- psi top A
------------------------------------------- :: Abs
-P |- psi \ psi0 x : A . b 
-
-P |- psi b 
-P |- psi psi0 a 
-------------------------------------------- :: App
-P |- psi b psi0 a 
-
-% weak sigmas
-
-P |- psi A 
-P ++ x : psi |- psi B 
----------------------------------------- :: WSigma
-P |- psi Sigma x : psi0 A . B 
-
-P |- psi psi0 a 
-P |- psi b 
------------------------------------------- :: WPair
-P |- psi (a psi0, b) 
-
-P |- psi a 
-(P ++ x :psi0 ) |- psi c
-------------------------------------------------------------- :: LetPair
-P |- psi let (x psi0 , ) = a in c 
-
-
-% strong sigmas
-
-P |- psi A 
-P ++ x : psi |- psi B 
----------------------------------------- :: SSigma
-P |- psi x : psi0 A && B
-
-P |- psi psi0 a
-P |- psi b 
------------------------------------------- :: SPair
-P |- psi (a psi0 & b) 
- 
-P |- psi a 
-psi0 <= psi
------------------------------------ :: Proj1
-P |- psi fst psi0 a 
-
-P |- psi a 
------------------------------------ :: Proj2
-P |- psi snd psi0 a 
-
-% sums
-
-P |- psi A 
-P |- psi B 
----------------- :: Sum
-P |- psi A + B
-
-P |- psi a1 
--------------------------------- :: Inj1
-P |- psi inj1 a1
-
-P |- psi a2 
---------------------------------- :: Inj2
-P |- psi inj2 a2
-
-P |- psi a 
-P |- psi b1
-P |- psi b2
-psi0 <= psi
------------------------------------------------ :: Case
-P |- psi case psi0 a of b1; b2 
-
-
-% unit
-
-uniq P
--------------------------- :: TyUnit
-P |- psi Unit
-
-uniq P
--------------------------- :: TmUnit
-P |- psi unit
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-defns
-   JGEq :: '' ::=
-
-defn 
-P |- psi psi0 a ~~ b ::  :: CEq :: 'CEq_' {{ com Syntactic equality at [[psi]] is guarded by [[psi0]] }}
- {{ tex [[ P ]] \vdash^{[[psi0]]}_{[[psi]]} [[ a ]] \sim [[ b ]]  }}
-
-by
-
-psi0 <= psi
-P |- psi a1 ~~ a2
--------------------------------- :: Leq
-P |- psi psi0 a1 ~~ a2
-
-not (psi0 <= psi)
-uniq P
--------------------------------- :: Nleq
-P |- psi psi0 a1 ~~ a2
-  
-defn
- P |- psi a ~~ b :: :: GEq :: 'GEq_' {{ com Syntactic Graded Equality }}
- {{ tex [[ P ]] \vdash [[ a ]] \sim_{[[ psi ]]} [[ b ]]  }}
-
-by
-
-uniq P
-x : psi0 in P 
-psi0 <= psi
------------------------------------------- :: Var
-P |- psi x ~~ x
-
-uniq P
----------------------------- :: Type
-P |- psi type s ~~ type s
-
-% functions
-
-P |- psi A1 ~~ A2
-P ++ x : psi |- psi B1 ~~ B2
-------------------------------------------------- :: Pi
-P |- psi Pi x :psi0 A1. B1 ~~ Pi x :psi0 A2. B2
-
-P ++ x : psi0 |- psi b1 ~~ b2
-P |- psi top A1 ~~ A2
-------------------------------------- :: Abs
-P |- psi \ psi0 x : A1 . b1 ~~ \ psi0 x : A2 . b2
-
-P |- psi b1 ~~ b2
-P |- psi psi0 a1 ~~ a2
--------------------------------- :: App
-P |- psi b1 psi0 a1 ~~ b2 psi0 a2
-
-% weak sigmas
-
-P |- psi A1 ~~ A2
-P ++ x : psi |- psi B1 ~~ B2
------------------------------------------------- :: WSigma
-P |- psi Sigma x :psi0 A1. B1 ~~ Sigma x :psi0 A2. B2
-
-P |- psi psi0 a1 ~~ a2
-P |- psi b1 ~~ b2
------------------------------------------------ :: WPair
-P |- psi (a1 psi0, b1) ~~ (a2 psi0, b2)
-
-P |- psi a1 ~~ a2
-(# P ++ x :psi0 #)|- psi b1 ~~ b2
---------------------------------------------------------------- :: LetPair
-P |- psi let (x psi0 , ) = a1 in b1 ~~ let (x psi0 , ) = a2 in b2
-
-% strong sigmas
-
-P |- psi A1 ~~ A2
-P ++ x : psi |- psi B1 ~~ B2
------------------------------------------ :: SSigma
-P |- psi x :psi0 A1 && B1 ~~ x :psi0 A2 && B2
-
-
-P |- psi psi0 a1 ~~ a2
-P |- psi b1 ~~ b2
----------------------------------------- :: SPair
-P |- psi (a1 psi0 & b1) ~~ (a2 psi0 & b2)
-
-P |- psi a1 ~~ a2
-psi0 <= psi
------------------------------------------- :: Proj1
-P |- psi fst psi0 a1 ~~ fst psi0 a2
-
-P |- psi a1 ~~ a2
-------------------------------- :: Proj2
-P |- psi snd psi0 a1 ~~ snd psi0 a2
-
-% sums
-
-P |- psi A1 ~~ A1'
-P |- psi A2 ~~ A2'
---------------------------------------- :: Sum
-P |- psi A1 + A2 ~~ A1' + A2'
-
-P |- psi a1 ~~ a1'
------------------------------------ :: Inj1
-P |- psi inj1 a1 ~~ inj1 a1'
-
-P |- psi a2 ~~ a2'
------------------------------------- :: Inj2
-P |- psi inj2 a2 ~~ inj2 a2'
-
-P |- psi a ~~ a'
-P |- psi b1 ~~ b1'
-P |- psi b2 ~~ b2'
-psi0 <= psi
----------------------------------------------------- :: Case
-P |- psi case psi0 a of b1; b2 ~~ case psi0 a' of b1';b2'
-
-% unit
-
-uniq P
----------------------------- :: TyUnit
-P |- psi Unit ~~ Unit
-
-uniq P
----------------------------- :: TmUnit
-P |- psi unit ~~ unit
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-defns
-   JUnTyDefEq :: '' ::=
-
-defn
- P |- psi phi a == b :: :: CDefEq :: 'CDefEq_' {{ com UnTyped Definitional Equality }}
- {{ tex [[ P ]] \vdash [[ a ]] \equiv_{[[ psi ]]} [[ b ]]  }}
-
-by
-   phi0 <= phi
-   P |- phi a == b 
-  --------------------- :: Leq 
-   P |- phi phi0 a == b
-
-   not (phi0 <= phi)
-   uniq P
-  --------------------- :: Nleq 
-   P |- phi phi0 a == b
-
-
-defn
- P |- psi a == b :: :: DefEq :: 'Eq_' {{ com UnTyped Definitional Equality }}
- {{ tex [[ P ]] \vdash [[ a ]] \equiv_{[[ psi ]]} [[ b ]]  }}
-
-by
-
-P |- psi a
--------------------- :: Refl
-P |- psi a == a
-
-P |- psi a == b
-P |- psi b == c
---------------------- :: Trans
-P |- psi a == c
-
-P |- psi a == b
---------------------- :: Sym
-P |- psi b == a
-
-P |- psi a
-|- a ~> b
-P |- psi b 
---------------------- :: Beta
-P |- psi a == b
-
-%% functions
-
-P |- psi A1 == A2
-P ++ x : psi |- psi B1 == B2
-------------------------------------------------- :: Pi
-P |- psi Pi x :psi0 A1. B1 == Pi x :psi0 A2. B2
-
-P |- psi top A1 == A2
-P ++ x : psi0 |- psi b1 == b2
-------------------------------------- :: Abs
-P |- psi \ psi0 x : A1 . b1 == \ psi0 x : A2 . b2
-
-P |- psi b1 == b2
-P |- psi psi0 a1 == a2
--------------------------------- :: App
-P |- psi b1 psi0 a1 == b2 psi0 a2
-
-P |- psi Pi x :psi0 A1. B1 == Pi x :psi0 A2. B2
-------------------------------------------- :: PiFst
-P |- psi A1 == A2
-
-P |- psi Pi x :psi0 A1. B1 == Pi x :psi0 A2. B2
-P |- psi a1 == a2
--------------------------------------------- :: PiSnd
-P |- psi B1 {a1 / x} == B2 {a2 / x}
-
-% P |- psi Pi x :psi0 A1. B1 == Pi x :psi0 A2. B2
-% P |- psi a1 == a2
-% psi0 <= psi
-% -------------------------------------------- :: PiSndRel
-% P |- psi B1 {a1 / x} == B2 {a2 / x}
-
-% P |- psi Pi x :psi0 A1. B1 == Pi x :psi0 A2. B2
-% not (psi0 <= psi)
-% P |- psi0 \/ psi a1
-% P |- psi0 \/ psi a2
-% -------------------------------------------- :: PiSndIrrel
-% P |- psi B1 {a1 / x} == B2 {a2 / x}
-
-
-%% weak sigmas
-
-P |- psi A1 == A2
-P ++ x : psi |- psi B1 == B2
------------------------------------------------- :: WSigma
-P |- psi Sigma x :psi0 A1. B1 == Sigma x :psi0 A2. B2
-
-P |- psi Sigma x :psi0 A1. B1 == Sigma x :psi0 A2. B2
-------------------------------------------------- :: WSigmaFst
-P |- psi A1 == A2
-
-P |- psi Sigma x :psi0 A1. B1 == Sigma x :psi0 A2. B2
-P |- psi a
---------------------------------------------------- :: WSigmaSnd
-P |- psi B1 {a/x} == B2 {a/x}
-
-% WSigmaSndRel / WSigmaSndIrrel ??
-
-P |- psi psi0 a1 == a2
-P |- psi b1 == b2
------------------------------------------------ :: WPair
-P |- psi (a1 psi0, b1) == (a2 psi0, b2)
-
-P |- psi a1 == a2
-(# P ++ x :psi0  #) |- psi b1 == b2
---------------------------------------------------------------- :: LetPair
-P |- psi let (x psi0 , ) = a1 in b1 == let (x psi0 ,) = a2 in b2
-
-%% strong sigmas
-
-P |- psi A1 == A2
-P ++ x : psi |- psi B1 == B2
------------------------------------------ :: SSigma
-P |- psi x :psi0 A1 && B1 == x :psi0 A2 && B2
-
-P |- psi x :psi0 A1 && B1 == x :psi0 A2 && B2
------------------------------------------- :: SSigmaFst
-P |- psi A1 == A2
-
-P |- psi x :psi0 A1 && B1 == x :psi0 A2 && B2
-P |- psi a1 == a2
--------------------------------------------- :: SSigmaSnd
-P |- psi B1 {a1/x} == B2 {a2/x}
-
-% WSigmaSndRel / WSigmaSndIrrel ??
-
-P |- psi psi0 a1 == a2
-P |- psi b1 == b2
----------------------------------------- :: SPair
-P |- psi (a1 psi0 & b1) == (a2 psi0 & b2)
-
-P |- psi a1 == a2
-psi0 <= psi
------------------------------------------- :: Proj1
-P |- psi fst psi0 a1 == fst psi0 a2
-
-P |- psi a1 == a2
-------------------------------- :: Proj2
-P |- psi snd psi0 a1 == snd psi0 a2
-
-%% sums
-
-P |- psi A1 == A1'
-P |- psi A2 == A2'
---------------------------------------- :: Sum
-P |- psi A1 + A2 == A1' + A2'
-
-P |- psi A1 + A2 == A1' + A2'
------------------------------------ :: SumFst
-P |- psi A1 == A1'
-
-P |- psi A1 + A2 == A1' + A2'
----------------------------------- :: SumSnd
-P |- psi A2 == A2'
-
-P |- psi a1 == a1'
------------------------------------ :: Inj1
-P |- psi inj1 a1 == inj1 a1'
-
-P |- psi a2 == a2'
------------------------------------- :: Inj2
-P |- psi inj2 a2 == inj2 a2'
-
-P |- psi a == a'
-P |- psi b1 == b1'
-P |- psi b2 == b2'
-psi0 <= psi
----------------------------------------------------- :: Case
-P |- psi case psi0 a of b1; b2 == case psi0 a' of b1';b2'
-
-%% unit
-
-uniq P
---------------------------- :: TyUnit
-P |- psi Unit == Unit
-
-uniq P
-------------------------- :: TmUnit
-P |- psi unit == unit
-
-nolc (\top x:type star.b1)
-nolc (\top x:type star.b2)
-P ++ x : psi |- phi b1 == b2
-not (psi <= phi)
---------------------------------------- :: SubstIrrel
-P |- phi b1 {a1/x} == b2 {a2/x} 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -938,7 +462,6 @@ axiom s1 s2
 W |-- psi type s1 : type s2
 
 W |-- psi a : A
-|top //\ W| |- psi0 A == B
 top //\ W |-- psi0 B : type s
 ------------------------------- :: Conv
 W |-- psi a : B
@@ -968,126 +491,18 @@ psi0 //\ W |-- psi0 a : A
 ------------------------------------------- :: App
 W |-- psi b psi0 a : B {a/x}
 
-%% weak sigmas
-
-W |-- psi A : type s1
-W ++ x : psi A |-- psi B : type s2
-rule_sig s1 s2 s3
----------------------------------------- :: WSigma
-W |-- psi Sigma x :psi0 A . B : type s3
-
-top //\ W |-- CTime (Sigma x :psi0 A. B) : type s
-psi0 //\ W |-- psi0 a : A
-W |-- psi b : B {a/x}
------------------------------------------- :: WPair
-W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
-
-% CTime /\ W |-- CTime (Sigma x :psi0 A. B) : type s
-% CTime /\ W |-- CTime a : A
-% CTime < psi0
-% % not psi0 <= CTime
-% W |-- psi b : B {a/x}
-% ------------------------------------------ :: WPairIrrel
-% W |-- psi  (a psi0, b) : Sigma x :psi0 A. B
-
-
-
-%++ z :psi1 Sigma x :psi0 A. B
-top //\ W |-- psi1 (Pi y : psi B. C) : type s
-W |-- psi a : (Sigma x :psi0 A . B)
-(# W ++ x :psi0 A #)  |-- psi c : (Pi y : phi B. C)
-%  needs this substitution above C {(x psi0, y)/z}
-%  and this one below C {a/z}
-------------------------------------------------------------- :: LetPair
-W |-- psi let (x psi0 , ) = a in c : C 
-
-%% strong sigmas
-%% We don't allow the first component to be I b/c then fst doesn't make sense.
-
-W |-- psi A : type s1
-W ++ x : psi A |-- psi B : type s2
-rule_sig s1 s2 s3
----------------------------------------- :: SSigma
-W |-- psi x :psi0 A && B : type s3
-
-top //\ W |-- psi1 x:psi0 A && B : type s
-psi //\ W |-- psi0 a : A
-W |-- psi b : B {a/x}
------------------------------------------- :: SPair
-W |-- psi (a psi0 & b) : x :psi0 A && B
-
-%% No SPairI 
-
-W |-- psi a : x :psi0 A && B
-psi0 <= psi
------------------------------------ :: Proj1
-W |-- psi fst psi0 a : A
-
-W |-- psi a : x :psi0 A && B
------------------------------------ :: Proj2
-W |-- psi snd psi0 a : B {fst psi0 a / x}
-
-%% sums
-
-W |-- psi A : type s
-W |-- psi B : type s
------------------------ :: Sum
-W |-- psi A + B : type s
-
-W |-- psi a1 : A1
-CTime /\ W |-- CTime A1 + A2 : type s
--------------------------------- :: Inj1
-W |-- psi inj1 a1 : A1 + A2
-
-W |-- psi a2 : A2
-CTime /\ W |-- CTime A1 + A2 : type s
---------------------------------- :: Inj2
-W |-- psi inj2 a2 : A1 + A2
-
-((CTime /\ W) ++ z :CTime A1 + A2) |-- CTime  B : type s
-W |-- psi a : A1 + A2
-B1 = (# B {inj1 x / z} #)
-B2 = (# B {inj2 y / z} #)
-W |-- psi b1 : Pi x :psi0 A1. B1
-W |-- psi b2 : Pi y :psi0 A2. B2
-psi0 <= psi
------------------------------------------------ :: Case
-W |-- psi case psi0 a of b1; b2 : B {a/z}
-
-%% unit
 
 uniq W
-psi <= CTime
 -------------------------- :: TmUnit
 W |-- psi Unit : type s
 
 uniq W
-psi <= CTime
 -------------------------- :: TyUnit
 W |-- psi unit : Unit
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-defns
-   JCTyping :: '' ::=
-
-defn 
-W |--> psi a : A ::    :: CTyping :: 'CT_'
-{{ tex [[W]][[|-->]] [[a]]:^{[[psi]]} [[A]] }}
-by
-
-
-W |-- psi a : A 
-psi <= CTime
-------------------- :: Leq
-W |--> psi a : A
-
-CTime /\ W |-- CTime a : A 
-CTime < psi
--------------------------- :: Top
-W |--> psi a : A
 
 
 defns 
@@ -1102,7 +517,7 @@ by
 
 
 |- W
-CTime /\ W |-- CTime A : type s
+top //\ W |-- psi A : type s
 x notin dom W
 ------------------------- :: Cons
 |- W ++ x :psi0 A
@@ -1197,9 +612,9 @@ defn
  {{ tex [[P]] [[|-]]  [[ a ]] \Rightarrow_{[[ psi ]]} [[ b ]]  }}
 by
 
-P |- psi a
--------------------- :: Refl
-P |- psi a => a
+% P |- psi a
+% -------------------- :: Refl
+% P |- psi a => a
 
 P |- psi  A1 => A2
 P ++ x : psi |- psi  B1 => B2
@@ -1314,7 +729,7 @@ P |- psi  a =>* b  ::   :: MultiPar :: 'MP_'
 {{ com multistep parallel reduction }}
 by
 
-P |- psi a 
+% P |- psi a 
 ------------------------- :: Refl
 P |- psi a =>* a
 
@@ -1333,7 +748,7 @@ by
 
 P |- psi  a1 =>* b1 
 P |- psi  a2 =>* b2
-P |- psi  b1 ~~ b2 
+% P |- psi  b1 ~~ b2 
 -------------------------- :: join
 P |- psi  a1 <=> a2 
 

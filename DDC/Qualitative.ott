@@ -23,7 +23,7 @@ metavar qualityvar, m ::=
 
 grammar
 
-grade, psi {{ tex \ell }} , phi {{ tex k }} :: 'q_' ::=   {{ coq grade }}
+grade, psi {{ tex \ell }} , phi {{ tex k }} :: 'q_' ::=   {{ coq DELETEME }}
   % | RTime                         :: M :: R  {{ tex { \color{black}{R} } }} {{ coq q_R }}
   % | CTime                         :: M :: C  {{ tex { \color{black}{C} } }} {{ coq q_C }}
   % | High                          :: M :: H  {{ tex { \color{black}{H} } }} {{ coq q_H }}
@@ -36,7 +36,7 @@ grade, psi {{ tex \ell }} , phi {{ tex k }} :: 'q_' ::=   {{ coq grade }}
   | ( psi )                       :: M :: paren {{ tex [[ psi ]] }} 
                                                 {{ coq ([[psi]]) }}
 
-sort, s :: '' ::=  {{ coq sort }}
+sort, s :: '' ::=  {{ coq DELETEME }}
   | star                          :: M :: Star {{ coq star }}
 
 tm, a , b , c , A , B , C , u , v , t :: 'a_' ::= {{ com terms and types }}

@@ -84,7 +84,7 @@ coq: $(COQMKFILENAME) $(VFILES)
 
 
 %_ott.v: $(OTT_LOC)/%.ott typing.patch
-	ott -i $(OTT_LOC)/Qualitative.ott  $(OTTOFLAGS) -coq_lngen true -coq_expand_list_types true
+	ott -i $(OTT_LOC)/Qualitative.ott  $(OTTOFLAGS) -coq_lngen true -coq_expand_list_types true && sed -i '/DELETEME/d' Qualitative_ott.v
 
 %_inf.v: $(OTT_LOC)/%.ott  Makefile
 	$(LNGEN) --coq-no-proofs --coq $*_inf.v --coq-ott $*_ott $(OTT_LOC)/$*.ott 

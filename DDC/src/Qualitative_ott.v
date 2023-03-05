@@ -10,9 +10,7 @@ Close Scope bool_scope.
 Definition tmvar : Set := var. (*r variables *)
 Definition qualityvar : Set := atom. (*r qualities *)
 
-Definition grade : Set := grade.
 
-Definition sort : Set := sort.
 
 Inductive tm : Set :=  (*r terms and types *)
  | a_TyUnit : tm (*r unit type *)
